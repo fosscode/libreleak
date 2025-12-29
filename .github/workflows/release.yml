@@ -1,0 +1,44 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  update-tags:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Update semantic version tags
+        run: |
+          # Get the tag from the release
+          TAG=${GITHUB_REF#refs/tags/}
+
+          # Only process vX.Y.Z tags
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Tag $TAG doesn't match vX.Y.Z pattern, skipping"
+            exit 0
+          fi
+
+          # Extract major and minor versions
+          MAJOR=$(echo "$TAG" | cut -d. -f1)
+          MINOR="$MAJOR.$(echo "$TAG" | cut -d. -f2)"
+
+          echo "Release tag: $TAG"
+          echo "Major tag: $MAJOR"
+          echo "Minor tag: $MINOR"
+
+          # Configure git
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Update major version tag (e.g., v1)
+          git tag -fa "$MAJOR" -m "Update $MAJOR to $TAG"
+          git push origin "$MAJOR" --force
+
+          # Update minor version tag (e.g., v1.0)
+          git tag -fa "$MINOR" -m "Update $MINOR to $TAG"
+          git push origin "$MINOR" --force
+
+          echo "Updated $MAJOR and $MINOR to point to $TAG"
