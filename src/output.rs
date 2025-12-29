@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 //! Output formatters
 //!
 //! Supports text, JSON, SARIF (for GitHub Actions), and report (for database storage) formats.
@@ -173,10 +175,9 @@ fn print_text(findings: &[Finding], show_context: bool) {
                 };
                 let line_style = if ctx.is_match { "\x1b[33m" } else { "\x1b[90m" };
                 println!(
-                    "    {} {:>4} {} {}\x1b[0m",
+                    "    {} {:>4} | {}\x1b[0m",
                     prefix,
                     ctx.line_num,
-                    "|",
                     line_style.to_owned() + &ctx.content
                 );
             }

@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 //! Core scanning logic
 //!
 //! Zero dependencies - hand-rolled pattern matching for full auditability.
@@ -145,7 +147,7 @@ impl Scanner {
             // Deduplicate: prefer more specific matches (same position, longer/more specific match)
             // Group by approximate position (within 10 chars) and keep the most specific
             let mut deduped: Vec<Finding> = Vec::new();
-            for (finding, col, len) in line_findings {
+            for (finding, col, _len) in line_findings {
                 let dominated = deduped.iter().any(|existing| {
                     // Check if this finding overlaps with an existing one
                     let existing_col = existing.column;
@@ -295,16 +297,14 @@ impl Scanner {
                     let value_start = &trimmed[1..].trim_start();
 
                     // Handle quoted values
-                    let (value, is_quoted) = if value_start.starts_with('"') {
-                        let inner = &value_start[1..];
+                    let (value, is_quoted) = if let Some(inner) = value_start.strip_prefix('"') {
                         if let Some(end) = inner.find('"') {
                             (&inner[..end], true)
                         } else {
                             search_pos = key_pos + key.len();
                             continue;
                         }
-                    } else if value_start.starts_with('\'') {
-                        let inner = &value_start[1..];
+                    } else if let Some(inner) = value_start.strip_prefix('\'') {
                         if let Some(end) = inner.find('\'') {
                             (&inner[..end], true)
                         } else {
@@ -369,11 +369,9 @@ impl Scanner {
                     let value_start = &trimmed[1..].trim_start();
 
                     // Handle quoted values
-                    let value = if value_start.starts_with('"') {
-                        let inner = &value_start[1..];
+                    let value = if let Some(inner) = value_start.strip_prefix('"') {
                         inner.find('"').map(|end| &inner[..end])
-                    } else if value_start.starts_with('\'') {
-                        let inner = &value_start[1..];
+                    } else if let Some(inner) = value_start.strip_prefix('\'') {
                         inner.find('\'').map(|end| &inner[..end])
                     } else {
                         let end = value_start
@@ -780,8 +778,7 @@ fn is_placeholder(value: &str) -> bool {
         "ghp_", "gho_", "ghu_", "ghr_", "glpat-", "sk-", "sk_", "npm_", "pypi-", "hf_",
     ];
     for prefix in prefixes {
-        if value.starts_with(prefix) {
-            let suffix = &value[prefix.len()..];
+        if let Some(suffix) = value.strip_prefix(prefix) {
             if suffix.len() >= 8 && suffix.chars().all(|c| c == 'x' || c == 'X') {
                 return true;
             }

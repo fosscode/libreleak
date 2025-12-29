@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use std::process::Command;
 
 pub fn clone_repo(url: &str) -> Result<String, Box<dyn std::error::Error>> {

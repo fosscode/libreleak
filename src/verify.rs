@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 //! Secret verification plugins
 //!
 //! Optional verification against provider APIs for bug bounty / authorized testing.
@@ -33,10 +35,10 @@ pub fn verify_secret(finding: &Finding) -> VerificationResult {
     #[cfg(not(feature = "verify"))]
     {
         let _ = finding;
-        return VerificationResult {
+        VerificationResult {
             status: VerificationStatus::NotSupported,
             message: Some("Compile with --features verify to enable".to_string()),
-        };
+        }
     }
 
     #[cfg(feature = "verify")]

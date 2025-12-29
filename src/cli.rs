@@ -4,6 +4,7 @@
 
 use std::env;
 
+#[allow(dead_code)]
 pub struct Args {
     pub target: Target,
     pub format: OutputFormat,
@@ -198,7 +199,7 @@ PRIVACY:
 fn list_rules() {
     let rules = crate::rules::builtin_rules();
     println!("Available detection rules:\n");
-    println!("{:<30} {}", "ID", "NAME");
+    println!("{:<30} NAME", "ID");
     println!("{}", "-".repeat(60));
     for rule in rules {
         println!("{:<30} {}", rule.id, rule.name);

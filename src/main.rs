@@ -36,7 +36,7 @@ fn run(args: cli::Args) -> Result<(), Box<dyn std::error::Error>> {
 
     let scanner = scanner::Scanner::new(rules).with_context(args.context_lines);
 
-    let mut findings = match &args.target {
+    let findings = match &args.target {
         cli::Target::Path(path) => scanner.scan_path(path)?,
         cli::Target::GitRepo(url) => scanner.scan_git_repo(url)?,
     };

@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 //! Detection rules for secrets
 //!
 //! Zero dependencies - all pattern matching is hand-rolled for full auditability.
