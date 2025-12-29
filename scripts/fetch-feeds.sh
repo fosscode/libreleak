@@ -616,6 +616,100 @@ fetch_x() {
     success "X/Twitter: $new_count new repos (from $total URLs)"
 }
 
+# Fetch repos from lesser-known code forges
+fetch_forges() {
+    log "Fetching from alternative code forges..."
+
+    local new_count=0
+    local total=0
+
+    # SourceHut (sr.ht)
+    log "  Checking SourceHut..."
+    local srht_repos=$(curl -s "https://git.sr.ht/api/repos" 2>/dev/null | \
+        grep -oE '"clone_url":"[^"]*"' | sed 's/"clone_url":"//;s/"//' | head -50)
+    for url in $srht_repos; do
+        if add_repo "$url" "sourcehut" "srht_api" 8; then ((new_count++)); fi
+        ((total++))
+    done
+
+    # NotABug.org (Gitea instance)
+    log "  Checking NotABug.org..."
+    local notabug_repos=$(curl -s "https://notabug.org/api/v1/repos/search?limit=50&sort=updated" 2>/dev/null | \
+        grep -oE '"clone_url":"[^"]*"' | sed 's/"clone_url":"//;s/"//')
+    for url in $notabug_repos; do
+        if add_repo "$url" "notabug" "notabug_api" 8; then ((new_count++)); fi
+        ((total++))
+    done
+
+    # Disroot Git (Gitea)
+    log "  Checking Disroot Git..."
+    local disroot_repos=$(curl -s "https://git.disroot.org/api/v1/repos/search?limit=50&sort=updated" 2>/dev/null | \
+        grep -oE '"clone_url":"[^"]*"' | sed 's/"clone_url":"//;s/"//')
+    for url in $disroot_repos; do
+        if add_repo "$url" "disroot" "disroot_api" 8; then ((new_count++)); fi
+        ((total++))
+    done
+
+    # Framagit (GitLab instance)
+    log "  Checking Framagit..."
+    local framagit_repos=$(curl -s "https://framagit.org/api/v4/projects?order_by=updated_at&per_page=50" 2>/dev/null | \
+        grep -oE '"http_url_to_repo":"[^"]*"' | sed 's/"http_url_to_repo":"//;s/"//')
+    for url in $framagit_repos; do
+        if add_repo "$url" "framagit" "framagit_api" 8; then ((new_count++)); fi
+        ((total++))
+    done
+
+    # Gitea.com
+    log "  Checking Gitea.com..."
+    local gitea_repos=$(curl -s "https://gitea.com/api/v1/repos/search?limit=50&sort=updated" 2>/dev/null | \
+        grep -oE '"clone_url":"[^"]*"' | sed 's/"clone_url":"//;s/"//')
+    for url in $gitea_repos; do
+        if add_repo "$url" "gitea" "gitea_api" 8; then ((new_count++)); fi
+        ((total++))
+    done
+
+    # 0xacab.org (GitLab for activists)
+    log "  Checking 0xacab.org..."
+    local acab_repos=$(curl -s "https://0xacab.org/api/v4/projects?order_by=updated_at&per_page=50" 2>/dev/null | \
+        grep -oE '"http_url_to_repo":"[^"]*"' | sed 's/"http_url_to_repo":"//;s/"//')
+    for url in $acab_repos; do
+        if add_repo "$url" "0xacab" "0xacab_api" 7; then ((new_count++)); fi
+        ((total++))
+    done
+
+    # Pagure (Fedora)
+    log "  Checking Pagure (Fedora)..."
+    local pagure_repos=$(curl -s "https://pagure.io/api/0/projects?per_page=50&order=date_modified" 2>/dev/null | \
+        grep -oE '"fullname":"[^"]*"' | sed 's/"fullname":"//;s/"$//' | \
+        while read name; do echo "https://pagure.io/$name.git"; done)
+    for url in $pagure_repos; do
+        if add_repo "$url" "pagure" "pagure_api" 7; then ((new_count++)); fi
+        ((total++))
+    done
+
+    # Rocketgit
+    log "  Checking RocketGit..."
+    local rocketgit=$(curl -s "https://rocketgit.com/api/repos?limit=50" 2>/dev/null | \
+        grep -oE 'https://rocketgit\.com/[^"]+\.git' | head -50)
+    for url in $rocketgit; do
+        if add_repo "$url" "rocketgit" "rocketgit_api" 7; then ((new_count++)); fi
+        ((total++))
+    done
+
+    # repo.or.cz
+    log "  Checking repo.or.cz..."
+    local repocz=$(curl -s "https://repo.or.cz/" 2>/dev/null | \
+        grep -oE 'href="/[^"]+\.git"' | sed 's/href="//;s/"$//' | \
+        while read path; do echo "https://repo.or.cz$path"; done | head -30)
+    for url in $repocz; do
+        if add_repo "$url" "repocz" "repocz_scrape" 7; then ((new_count++)); fi
+        ((total++))
+    done
+
+    update_feed_cursor "forges" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$new_count"
+    success "Alternative forges: $new_count new repos (from $total URLs)"
+}
+
 # Fetch repos from Hacker News
 fetch_hackernews() {
     log "Fetching repos from Hacker News..."
@@ -750,6 +844,15 @@ main() {
             fetch_reddit
             fetch_x
             fetch_hackernews
+            ;;
+        forges)
+            fetch_forges
+            ;;
+        non-github|alt)
+            fetch_gitlab 7
+            fetch_codeberg
+            fetch_bitbucket 7
+            fetch_forges
             ;;
         all)
             fetch_github_events

@@ -9,6 +9,16 @@ use std::path::Path;
 
 use crate::rules::{Charset, Detector, Rule};
 
+/// Calculate rule specificity for deduplication
+/// Generic rules get low priority (0), specific rules use their ID length
+fn rule_specificity(rule_id: &str) -> usize {
+    if rule_id.starts_with("generic-") {
+        0
+    } else {
+        rule_id.len()
+    }
+}
+
 pub struct Scanner {
     rules: Vec<Rule>,
     context_lines: usize,
@@ -155,10 +165,10 @@ impl Scanner {
 
                     // If positions are close and existing match is longer/same, skip this one
                     if col_diff < 15 {
-                        // Prefer longer matches (more specific)
-                        // Also prefer rules with longer prefixes (openrouter-api-key > openai-api-key)
-                        let existing_specificity = existing.rule_id.len();
-                        let new_specificity = finding.rule_id.len();
+                        // Prefer specific rules over generic ones
+                        // Generic rules have low priority (score 0), specific rules use their ID length
+                        let existing_specificity = rule_specificity(&existing.rule_id);
+                        let new_specificity = rule_specificity(&finding.rule_id);
                         existing_specificity >= new_specificity
                     } else {
                         false
@@ -171,8 +181,8 @@ impl Scanner {
                         let existing_col = existing.column;
                         let col_diff = (col as isize - existing_col as isize).unsigned_abs();
                         if col_diff < 15 {
-                            let existing_specificity = existing.rule_id.len();
-                            let new_specificity = finding.rule_id.len();
+                            let existing_specificity = rule_specificity(&existing.rule_id);
+                            let new_specificity = rule_specificity(&finding.rule_id);
                             existing_specificity > new_specificity
                         } else {
                             true
