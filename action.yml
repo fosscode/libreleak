@@ -1,0 +1,74 @@
+name: 'libreleak'
+description: 'Fast, offline secret scanner'
+author: 'fosscode'
+
+inputs:
+  path:
+    description: 'Path to scan'
+    default: '.'
+  fail-on-leak:
+    description: 'Fail the workflow if secrets are found'
+    default: 'true'
+  format:
+    description: 'Output format (text, json, sarif)'
+    default: 'text'
+  exclude-rules:
+    description: 'Comma-separated list of rule IDs to exclude'
+    default: ''
+  only-rules:
+    description: 'Comma-separated list of rule IDs to include'
+    default: ''
+
+outputs:
+  findings:
+    description: 'Number of secrets found'
+    value: ${{ steps.scan.outputs.findings }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Rust
+      uses: dtolnay/rust-toolchain@stable
+
+    - name: Cache cargo
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-libreleak-${{ hashFiles('**/Cargo.lock') }}
+
+    - name: Build libreleak
+      shell: bash
+      run: |
+        cd ${{ github.action_path }}
+        cargo build --release
+
+    - name: Run scan
+      id: scan
+      shell: bash
+      run: |
+        ARGS="${{ inputs.path }}"
+
+        if [ "${{ inputs.fail-on-leak }}" = "true" ]; then
+          ARGS="$ARGS --fail-on-leak"
+        fi
+
+        if [ -n "${{ inputs.format }}" ]; then
+          ARGS="$ARGS --format ${{ inputs.format }}"
+        fi
+
+        if [ -n "${{ inputs.exclude-rules }}" ]; then
+          ARGS="$ARGS --exclude ${{ inputs.exclude-rules }}"
+        fi
+
+        if [ -n "${{ inputs.only-rules }}" ]; then
+          ARGS="$ARGS --only ${{ inputs.only-rules }}"
+        fi
+
+        ${{ github.action_path }}/target/release/libreleak $ARGS
+
+branding:
+  icon: 'shield'
+  color: 'red'

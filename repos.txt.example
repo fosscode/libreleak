@@ -1,0 +1,13 @@
+# libreleak batch scan - Repository List
+# One repository URL per line
+# Lines starting with # are comments
+#
+# Example usage:
+#   cp repos.txt.example repos.txt
+#   # Add your target repos
+#   docker compose run batch-scanner
+
+# Example repositories (replace with your targets):
+# https://github.com/example/repo1
+# https://github.com/example/repo2
+# git@github.com:example/private-repo.git

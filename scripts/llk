@@ -1,0 +1,474 @@
+#!/bin/bash
+# llk - libreleak CLI utility
+# Query and manage the libreleak database
+#
+# Usage:
+#   llk status              # Show overall status
+#   llk findings            # List all findings
+#   llk findings --bounty   # List bounty-eligible findings
+#   llk repos               # List repos
+#   llk repos --pending     # List pending repos
+#   llk add <url>           # Add a repo manually
+#   llk scan [n]            # Scan n repos from queue
+#   llk fetch [source]      # Fetch repos from feeds
+#   llk report <id>         # Mark finding as reported
+#   llk export              # Export findings to JSON
+
+set -e
+
+DB_PATH="${LIBRELEAK_DB:-$HOME/.libreleak/libreleak.db}"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+BOLD='\033[1m'
+NC='\033[0m'
+
+# Check database
+check_db() {
+    if [ ! -f "$DB_PATH" ]; then
+        echo -e "${RED}Database not found.${NC}"
+        echo "Run: ./scripts/init-db.sh"
+        exit 1
+    fi
+}
+
+# Status command
+cmd_status() {
+    check_db
+
+    echo -e "${BOLD}libreleak Status${NC}"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+
+    # Overall stats
+    echo -e "${BOLD}Repositories:${NC}"
+    sqlite3 -column "$DB_PATH" "
+        SELECT
+            COUNT(*) as total,
+            SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
+            SUM(CASE WHEN status = 'scanned' THEN 1 ELSE 0 END) as scanned,
+            SUM(CASE WHEN status = 'error' THEN 1 ELSE 0 END) as errors,
+            SUM(CASE WHEN findings_count > 0 THEN 1 ELSE 0 END) as with_findings
+        FROM repos;
+    "
+
+    echo ""
+    echo -e "${BOLD}Findings:${NC}"
+    sqlite3 -column "$DB_PATH" "
+        SELECT
+            COUNT(*) as total,
+            SUM(CASE WHEN verified = 1 THEN 1 ELSE 0 END) as verified,
+            SUM(CASE WHEN reported = 0 THEN 1 ELSE 0 END) as unreported
+        FROM findings;
+    "
+
+    echo ""
+    echo -e "${BOLD}By Platform:${NC}"
+    sqlite3 -column "$DB_PATH" "
+        SELECT platform, COUNT(*) as repos, SUM(findings_count) as findings
+        FROM repos
+        GROUP BY platform
+        ORDER BY repos DESC;
+    "
+
+    echo ""
+    echo -e "${BOLD}Top Finding Types:${NC}"
+    sqlite3 -column "$DB_PATH" "
+        SELECT rule_id, COUNT(*) as count
+        FROM findings
+        GROUP BY rule_id
+        ORDER BY count DESC
+        LIMIT 10;
+    "
+
+    echo ""
+    echo -e "${BOLD}Feed Sources:${NC}"
+    sqlite3 -column "$DB_PATH" "
+        SELECT name, repos_fetched, datetime(last_fetched_at, 'localtime') as last_fetch
+        FROM feed_sources
+        ORDER BY last_fetched_at DESC;
+    "
+}
+
+# Findings command
+cmd_findings() {
+    check_db
+
+    local filter=""
+    local bounty_only=false
+
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            --bounty|-b)
+                bounty_only=true
+                shift
+                ;;
+            --rule|-r)
+                filter="AND f.rule_id = '$2'"
+                shift 2
+                ;;
+            --unreported|-u)
+                filter="AND f.reported = FALSE"
+                shift
+                ;;
+            *)
+                shift
+                ;;
+        esac
+    done
+
+    if [ "$bounty_only" = true ]; then
+        echo -e "${BOLD}Bounty-Eligible Findings${NC}"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        sqlite3 -header -column "$DB_PATH" "
+            SELECT
+                f.id,
+                f.rule_id,
+                f.secret_preview,
+                r.url as repo_url,
+                bp.name as bounty_program,
+                bp.max_payout
+            FROM findings f
+            JOIN repos r ON f.repo_id = r.id
+            JOIN bounty_programs bp ON (',' || bp.key_types || ',') LIKE ('%,' || f.rule_id || ',%')
+            WHERE f.reported = FALSE AND bp.active = TRUE
+            ORDER BY bp.max_payout DESC NULLS LAST
+            LIMIT 50;
+        "
+    else
+        echo -e "${BOLD}Findings${NC}"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        sqlite3 -header -column "$DB_PATH" "
+            SELECT
+                f.id,
+                f.rule_id,
+                f.secret_preview,
+                f.file_path,
+                f.line_number as line,
+                r.platform,
+                substr(r.url, 1, 50) as repo_url,
+                datetime(f.found_at, 'localtime') as found
+            FROM findings f
+            JOIN repos r ON f.repo_id = r.id
+            WHERE 1=1 $filter
+            ORDER BY f.found_at DESC
+            LIMIT 100;
+        "
+    fi
+}
+
+# Repos command
+cmd_repos() {
+    check_db
+
+    local status_filter=""
+
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            --pending|-p)
+                status_filter="WHERE status = 'pending'"
+                shift
+                ;;
+            --scanned|-s)
+                status_filter="WHERE status = 'scanned'"
+                shift
+                ;;
+            --findings|-f)
+                status_filter="WHERE findings_count > 0"
+                shift
+                ;;
+            --errors|-e)
+                status_filter="WHERE status = 'error'"
+                shift
+                ;;
+            *)
+                shift
+                ;;
+        esac
+    done
+
+    echo -e "${BOLD}Repositories${NC}"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    sqlite3 -header -column "$DB_PATH" "
+        SELECT
+            id,
+            platform,
+            owner || '/' || name as repo,
+            source,
+            priority as prio,
+            status,
+            findings_count as finds,
+            scan_count as scans,
+            datetime(last_scanned_at, 'localtime') as last_scan
+        FROM repos
+        $status_filter
+        ORDER BY priority DESC, discovered_at DESC
+        LIMIT 100;
+    "
+}
+
+# Add repo command
+cmd_add() {
+    check_db
+
+    local url="$1"
+    local priority="${2:-5}"
+
+    if [ -z "$url" ]; then
+        echo "Usage: llk add <repo_url> [priority]"
+        exit 1
+    fi
+
+    # Detect platform
+    local platform="unknown"
+    case "$url" in
+        *github.com*) platform="github" ;;
+        *gitlab.com*) platform="gitlab" ;;
+        *codeberg.org*) platform="codeberg" ;;
+    esac
+
+    # Parse owner/name
+    local owner=$(echo "$url" | sed -n 's|.*\.\(com\|org\)/\([^/]*\)/.*|\2|p')
+    local name=$(echo "$url" | sed -n 's|.*\.\(com\|org\)/[^/]*/\([^/\.]*\).*|\2|p')
+
+    sqlite3 "$DB_PATH" "
+        INSERT OR IGNORE INTO repos (url, platform, owner, name, source, priority)
+        VALUES ('$url', '$platform', '$owner', '$name', 'manual', $priority);
+    "
+
+    echo -e "${GREEN}Added:${NC} $url (priority: $priority)"
+}
+
+# Scan command
+cmd_scan() {
+    local count="${1:-50}"
+    "$SCRIPT_DIR/scan-queue.sh" "$count"
+}
+
+# Fetch command
+cmd_fetch() {
+    local source="${1:-all}"
+    "$SCRIPT_DIR/fetch-feeds.sh" "$source"
+}
+
+# Report command - mark finding as reported
+cmd_report() {
+    check_db
+
+    local finding_id="$1"
+    local program="$2"
+
+    if [ -z "$finding_id" ]; then
+        echo "Usage: llk report <finding_id> [bounty_program]"
+        exit 1
+    fi
+
+    sqlite3 "$DB_PATH" "
+        UPDATE findings
+        SET reported = TRUE,
+            reported_at = CURRENT_TIMESTAMP,
+            reported_to = '$program'
+        WHERE id = $finding_id;
+    "
+
+    echo -e "${GREEN}Marked finding $finding_id as reported${NC}"
+
+    # Show the finding
+    sqlite3 -header -column "$DB_PATH" "
+        SELECT f.id, f.rule_id, f.secret_preview, r.url, f.reported_to
+        FROM findings f
+        JOIN repos r ON f.repo_id = r.id
+        WHERE f.id = $finding_id;
+    "
+}
+
+# Export command
+cmd_export() {
+    check_db
+
+    local output="${1:-findings_export.json}"
+
+    sqlite3 -json "$DB_PATH" "
+        SELECT
+            f.id,
+            f.rule_id,
+            f.rule_name,
+            f.file_path,
+            f.line_number,
+            f.secret_preview,
+            f.verified,
+            f.verification_status,
+            f.reported,
+            f.reported_to,
+            f.found_at,
+            r.url as repo_url,
+            r.platform,
+            r.owner,
+            r.name as repo_name
+        FROM findings f
+        JOIN repos r ON f.repo_id = r.id
+        ORDER BY f.found_at DESC;
+    " > "$output"
+
+    echo -e "${GREEN}Exported to:${NC} $output"
+}
+
+# Show finding details
+cmd_show() {
+    check_db
+
+    local finding_id="$1"
+
+    if [ -z "$finding_id" ]; then
+        echo "Usage: llk show <finding_id>"
+        exit 1
+    fi
+
+    echo -e "${BOLD}Finding #$finding_id${NC}"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+    sqlite3 -line "$DB_PATH" "
+        SELECT
+            f.id,
+            f.rule_id,
+            f.rule_name,
+            f.file_path,
+            f.line_number,
+            f.secret_preview,
+            f.context,
+            f.verified,
+            f.verification_status,
+            f.reported,
+            f.reported_to,
+            f.reported_at,
+            f.found_at,
+            r.url as repo_url,
+            r.platform
+        FROM findings f
+        JOIN repos r ON f.repo_id = r.id
+        WHERE f.id = $finding_id;
+    "
+
+    echo ""
+    echo -e "${BOLD}Matching Bounty Programs:${NC}"
+    sqlite3 -column "$DB_PATH" "
+        SELECT bp.name, bp.platform, bp.min_payout, bp.max_payout, bp.url
+        FROM findings f
+        JOIN bounty_programs bp ON (',' || bp.key_types || ',') LIKE ('%,' || f.rule_id || ',%')
+        WHERE f.id = $finding_id AND bp.active = TRUE;
+    "
+}
+
+# Reset command - reset a repo for re-scanning
+cmd_reset() {
+    check_db
+
+    local repo_id="$1"
+
+    if [ -z "$repo_id" ]; then
+        echo "Usage: llk reset <repo_id>"
+        exit 1
+    fi
+
+    sqlite3 "$DB_PATH" "
+        UPDATE repos
+        SET status = 'pending', error_message = NULL
+        WHERE id = $repo_id;
+    "
+
+    echo -e "${GREEN}Reset repo $repo_id to pending${NC}"
+}
+
+# Help
+cmd_help() {
+    echo -e "${BOLD}llk - libreleak CLI${NC}"
+    echo ""
+    echo "Usage: llk <command> [options]"
+    echo ""
+    echo "Commands:"
+    echo "  status              Show overall status and statistics"
+    echo "  findings [options]  List findings"
+    echo "    --bounty, -b      Only show bounty-eligible findings"
+    echo "    --unreported, -u  Only show unreported findings"
+    echo "    --rule <id>       Filter by rule ID"
+    echo "  repos [options]     List repositories"
+    echo "    --pending, -p     Only show pending repos"
+    echo "    --scanned, -s     Only show scanned repos"
+    echo "    --findings, -f    Only show repos with findings"
+    echo "    --errors, -e      Only show repos with errors"
+    echo "  add <url> [prio]    Add a repository manually"
+    echo "  scan [count]        Scan repos from queue (default: 50)"
+    echo "  fetch [source]      Fetch repos from feeds"
+    echo "  show <id>           Show finding details"
+    echo "  report <id> [prog]  Mark finding as reported"
+    echo "  reset <repo_id>     Reset repo for re-scanning"
+    echo "  export [file]       Export findings to JSON"
+    echo ""
+    echo "Environment:"
+    echo "  LIBRELEAK_DB        Database path (default: ~/.libreleak/libreleak.db)"
+    echo "  GITHUB_TOKEN        GitHub API token for higher rate limits"
+    echo ""
+    echo "Examples:"
+    echo "  llk fetch                    # Fetch from all feed sources"
+    echo "  llk scan 100                 # Scan 100 repos"
+    echo "  llk findings --bounty        # List bounty-eligible findings"
+    echo "  llk show 42                  # Show details of finding #42"
+    echo "  llk report 42 openai         # Mark finding #42 as reported to OpenAI"
+}
+
+# Main
+case "${1:-help}" in
+    status|st)
+        shift
+        cmd_status "$@"
+        ;;
+    findings|find|f)
+        shift
+        cmd_findings "$@"
+        ;;
+    repos|r)
+        shift
+        cmd_repos "$@"
+        ;;
+    add|a)
+        shift
+        cmd_add "$@"
+        ;;
+    scan|s)
+        shift
+        cmd_scan "$@"
+        ;;
+    fetch)
+        shift
+        cmd_fetch "$@"
+        ;;
+    show)
+        shift
+        cmd_show "$@"
+        ;;
+    report)
+        shift
+        cmd_report "$@"
+        ;;
+    reset)
+        shift
+        cmd_reset "$@"
+        ;;
+    export)
+        shift
+        cmd_export "$@"
+        ;;
+    help|-h|--help)
+        cmd_help
+        ;;
+    *)
+        echo "Unknown command: $1"
+        echo "Run 'llk help' for usage"
+        exit 1
+        ;;
+esac

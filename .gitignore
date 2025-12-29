@@ -1,0 +1,78 @@
+# Build artifacts
+/target/
+debug/
+release/
+
+# Cargo lock (regenerated on build)
+Cargo.lock
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test artifacts
+*.log
+tmp/
+
+# ============================================
+# Scan Results & Reports (may contain secrets)
+# ============================================
+/reports/
+/real-reports/
+*.report.json
+*-report.json
+*-results.json
+real-scan-results.json
+real-scan-targets.txt
+scan-results/
+findings/
+
+# Bug bounty campaign results
+BUG_BOUNTY_RESULTS.md
+
+# Temporary test files
+small-test.txt
+test-secrets.txt
+*.test.txt
+
+# ============================================
+# Claude / AI Assistant Files
+# ============================================
+# Keep CLAUDE.md (project instructions)
+# But ignore Claude working directories
+.claude/
+
+# ============================================
+# Repo clones for scanning
+# ============================================
+/clone/
+/clones/
+repos.txt
+
+# ============================================
+# Docker volumes and state
+# ============================================
+libreleak_state/
+.docker/
+
+# ============================================
+# Environment files (may contain secrets)
+# ============================================
+.env
+.env.local
+.env.*.local
+*.env
+
+# ============================================
+# Python/Ruff cache
+# ============================================
+.ruff_cache/
+__pycache__/
+*.pyc

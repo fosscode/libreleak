@@ -1,0 +1,15 @@
+# libreleak report aggregator
+# Imports JSON reports into PostgreSQL database
+
+FROM python:3.12-alpine
+
+RUN apk add --no-cache postgresql-client
+
+COPY scripts/import-reports.py /usr/local/bin/import-reports.py
+RUN chmod +x /usr/local/bin/import-reports.py
+
+RUN pip install --no-cache-dir psycopg2-binary
+
+WORKDIR /reports
+
+ENTRYPOINT ["python", "/usr/local/bin/import-reports.py"]

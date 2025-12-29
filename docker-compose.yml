@@ -1,0 +1,169 @@
+# libreleak - Secret Scanner Docker Compose
+#
+# Use this to scan repositories and generate reports for database storage.
+#
+# Usage:
+#   # Scan a git URL and output report:
+#   REPO_URL=https://github.com/example/repo docker compose up scanner
+#
+#   # Scan a local directory (mount it):
+#   docker compose run -v /path/to/code:/scan/repo scanner /scan/repo
+#
+#   # Run with PostgreSQL for report storage:
+#   docker compose --profile database up
+#
+#   # Continuous monitoring - discover and scan new repos automatically:
+#   PLATFORM=github TARGET=microsoft docker compose up monitor
+#
+#   # Discover repos from GitHub (one-time):
+#   PLATFORM=github TARGET="language:rust" DAYS=1 docker compose up repo-discovery
+#
+# Reports are saved to ./reports/ directory
+
+services:
+  scanner:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: libreleak:latest
+    volumes:
+      # Output reports here
+      - ./reports:/reports
+      # Mount local repos here for scanning
+      - ./scan:/scan:ro
+    environment:
+      - REPO_URL=${REPO_URL:-}
+      - BRANCH=${BRANCH:-}
+      - OUTPUT_DIR=/reports
+      - OUTPUT_FORMAT=${OUTPUT_FORMAT:-report}
+      - ENABLE_VERIFICATION=${ENABLE_VERIFICATION:-false}
+    entrypoint: ["/usr/local/bin/scan-repo.sh"]
+    # Override with specific scan target if needed:
+    # command: ["/scan/my-repo"]
+
+  # Repository discovery - finds new repos from code hosting platforms
+  repo-discovery:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: libreleak:latest
+    volumes:
+      - ./reports:/reports
+      - ./repos.txt:/repos.txt
+    environment:
+      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
+      - PLATFORM=${PLATFORM:-github}
+      - TARGET=${TARGET:-}
+      - DAYS=${DAYS:-7}
+    command: ["/usr/local/bin/discover-repos.sh", "${PLATFORM:-github}", "${TARGET:-}", "${DAYS:-7}"]
+
+  # Batch scanner - scans multiple repos from a file
+  batch-scanner:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: libreleak:latest
+    volumes:
+      - ./reports:/reports
+      - ./repos.txt:/repos.txt:ro
+    environment:
+      - OUTPUT_DIR=/reports
+      - OUTPUT_FORMAT=${OUTPUT_FORMAT:-report}
+      - ENABLE_VERIFICATION=${ENABLE_VERIFICATION:-false}
+    entrypoint: ["/usr/local/bin/batch-scan.sh"]
+
+  # Continuous monitoring - discovers and scans new repos automatically
+  monitor:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: libreleak:latest
+    restart: unless-stopped
+    volumes:
+      - ./reports:/reports
+      - libreleak_state:/var/lib/libreleak
+    environment:
+      # Platform to monitor: github, github-trending, codeberg, gitlab
+      - PLATFORM=${PLATFORM:-github}
+      # Target: org/user name, or search query like "language:rust"
+      - TARGET=${TARGET:-}
+      # Look back N days for new repos
+      - DAYS=${DAYS:-1}
+      # Seconds between discovery cycles (default: 30 min)
+      - INTERVAL=${INTERVAL:-1800}
+      # Max repos to scan per cycle
+      - MAX_REPOS_PER_RUN=${MAX_REPOS_PER_RUN:-50}
+      # Per-repo scan timeout in seconds
+      - SCAN_TIMEOUT=${SCAN_TIMEOUT:-600}
+      # API tokens for higher rate limits
+      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
+      - GITLAB_TOKEN=${GITLAB_TOKEN:-}
+      - CODEBERG_TOKEN=${CODEBERG_TOKEN:-}
+      # Scan settings
+      - OUTPUT_DIR=/reports
+      - OUTPUT_FORMAT=${OUTPUT_FORMAT:-report}
+      - ENABLE_VERIFICATION=${ENABLE_VERIFICATION:-false}
+    entrypoint: ["/usr/local/bin/monitor.sh"]
+
+  # Optional: PostgreSQL for storing reports
+  postgres:
+    image: postgres:16-alpine
+    profiles:
+      - database
+    environment:
+      POSTGRES_DB: libreleak
+      POSTGRES_USER: scanner
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U scanner -d libreleak"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Report compiler - generates research reports from scan results
+  report-compiler:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: libreleak:latest
+    volumes:
+      - ./reports:/reports:ro
+      - ./compiled-reports:/compiled-reports
+    command: ["python", "/usr/local/bin/compile-reports.py", "--format", "html", "/reports"]
+
+  # Bug bounty reporter - automatically reports findings to bounty programs
+  bounty-reporter:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: libreleak:latest
+    volumes:
+      - ./reports:/reports:ro
+      - ./bounty-reports:/bounty-reports
+    environment:
+      - DRY_RUN=${DRY_RUN:-true}
+    command: ["python", "/usr/local/bin/report-bounties.py", "--dry-run", "/reports"]
+
+  # Report aggregator - imports JSON reports into database
+  aggregator:
+    build:
+      context: .
+      dockerfile: Dockerfile.aggregator
+    profiles:
+      - database
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./reports:/reports:ro
+    environment:
+      DATABASE_URL: postgres://scanner:${POSTGRES_PASSWORD:-changeme}@postgres:5432/libreleak
+
+volumes:
+  postgres_data:
+  libreleak_state:

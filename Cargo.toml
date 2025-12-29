@@ -1,0 +1,28 @@
+[package]
+name = "libreleak"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "Fast, minimal, offline secret scanner for git repositories"
+repository = "https://github.com/fosscode/libreleak"
+keywords = ["security", "secrets", "scanner", "git"]
+categories = ["command-line-utilities", "development-tools"]
+
+# Zero runtime dependencies - full control, no telemetry possible
+[dependencies]
+
+[dev-dependencies]
+
+[features]
+# Optional verification plugins (compile-time opt-in only)
+verify = []
+
+[[bin]]
+name = "libreleak"
+path = "src/main.rs"
+
+[profile.release]
+lto = true
+strip = true
+panic = "abort"
+codegen-units = 1
