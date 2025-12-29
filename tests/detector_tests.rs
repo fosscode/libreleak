@@ -62,7 +62,10 @@ fn should_detect_gemini_token(output: &str) -> bool {
 
 fn count_findings(output: &str) -> usize {
     // Count lines containing rule IDs (simple heuristic)
-    output.lines().filter(|l| l.contains("Rule:") || l.contains("rule_id")).count()
+    output
+        .lines()
+        .filter(|l| l.contains("Rule:") || l.contains("rule_id"))
+        .count()
 }
 
 // ============================================================================
@@ -75,7 +78,10 @@ fn test_aws_access_key_id_detection() {
     dir.write_file("config.py", &format!("AWS_KEY = '{}'", AWS_ACCESS_KEY_ID));
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "aws-access-key-id"), "Should detect AWS access key ID");
+    assert!(
+        should_detect(&output, "aws-access-key-id"),
+        "Should detect AWS access key ID"
+    );
 }
 
 #[test]
@@ -95,16 +101,25 @@ key = "AKIA!@#$%^&*()12345"
     );
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(!should_detect(&output, "aws-access-key-id"), "Should not detect invalid AWS keys");
+    assert!(
+        !should_detect(&output, "aws-access-key-id"),
+        "Should not detect invalid AWS keys"
+    );
 }
 
 #[test]
 fn test_aws_secret_key_in_env() {
     let dir = TestDir::new("aws-secret");
-    dir.write_file(".env", &format!("AWS_SECRET_ACCESS_KEY={}", AWS_SECRET_ACCESS_KEY));
+    dir.write_file(
+        ".env",
+        &format!("AWS_SECRET_ACCESS_KEY={}", AWS_SECRET_ACCESS_KEY),
+    );
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "aws-secret-key"), "Should detect AWS secret key");
+    assert!(
+        should_detect(&output, "aws-secret-key"),
+        "Should detect AWS secret key"
+    );
 }
 
 // ============================================================================
@@ -117,7 +132,10 @@ fn test_github_pat_detection() {
     dir.write_file("config.js", &format!("const token = '{}';", GITHUB_PAT));
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "github-pat"), "Should detect GitHub PAT");
+    assert!(
+        should_detect(&output, "github-pat"),
+        "Should detect GitHub PAT"
+    );
 }
 
 #[test]
@@ -126,7 +144,10 @@ fn test_github_oauth_detection() {
     dir.write_file("auth.py", &format!("OAUTH_TOKEN = '{}'", GITHUB_OAUTH));
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "github-oauth"), "Should detect GitHub OAuth token");
+    assert!(
+        should_detect(&output, "github-oauth"),
+        "Should detect GitHub OAuth token"
+    );
 }
 
 #[test]
@@ -157,7 +178,10 @@ ghp_
     );
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(!should_detect(&output, "github-pat"), "Should not detect invalid GitHub tokens");
+    assert!(
+        !should_detect(&output, "github-pat"),
+        "Should not detect invalid GitHub tokens"
+    );
 }
 
 // ============================================================================
@@ -170,7 +194,10 @@ fn test_gitlab_pat_detection() {
     dir.write_file(".gitlab-ci.yml", &format!("GITLAB_TOKEN: {}", GITLAB_PAT));
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "gitlab-pat"), "Should detect GitLab PAT");
+    assert!(
+        should_detect(&output, "gitlab-pat"),
+        "Should detect GitLab PAT"
+    );
 }
 
 #[test]
@@ -179,7 +206,10 @@ fn test_gitlab_pipeline_token() {
     dir.write_file("ci.sh", &format!("export CI_TOKEN={}", GITLAB_PIPELINE));
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "gitlab-pipeline"), "Should detect GitLab pipeline token");
+    assert!(
+        should_detect(&output, "gitlab-pipeline"),
+        "Should detect GitLab pipeline token"
+    );
 }
 
 // ============================================================================
@@ -193,7 +223,10 @@ fn test_openai_api_key_detection() {
 
     let (output, _) = run_scan(dir.path_str());
     // OpenAI and DeepSeek both use sk- prefix, so either match is valid
-    assert!(should_detect_sk_token(&output), "Should detect OpenAI API key");
+    assert!(
+        should_detect_sk_token(&output),
+        "Should detect OpenAI API key"
+    );
 }
 
 #[test]
@@ -202,7 +235,10 @@ fn test_openai_project_key_detection() {
     dir.write_file(".env", &format!("OPENAI_API_KEY={}", OPENAI_PROJECT_KEY));
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "openai-project-key"), "Should detect OpenAI project key");
+    assert!(
+        should_detect(&output, "openai-project-key"),
+        "Should detect OpenAI project key"
+    );
 }
 
 // ============================================================================
@@ -212,10 +248,16 @@ fn test_openai_project_key_detection() {
 #[test]
 fn test_anthropic_api_key_detection() {
     let dir = TestDir::new("anthropic-key");
-    dir.write_file("config.py", &format!("CLAUDE_KEY = '{}'", ANTHROPIC_API_KEY));
+    dir.write_file(
+        "config.py",
+        &format!("CLAUDE_KEY = '{}'", ANTHROPIC_API_KEY),
+    );
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "anthropic-api-key"), "Should detect Anthropic API key");
+    assert!(
+        should_detect(&output, "anthropic-api-key"),
+        "Should detect Anthropic API key"
+    );
 }
 
 #[test]
@@ -243,7 +285,10 @@ fn test_xai_api_key_detection() {
     dir.write_file("config.py", &format!("XAI_KEY = '{}'", XAI_API_KEY));
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "xai-api-key"), "Should detect xAI API key");
+    assert!(
+        should_detect(&output, "xai-api-key"),
+        "Should detect xAI API key"
+    );
 }
 
 #[test]
@@ -255,7 +300,10 @@ fn test_grok_env_var_detection() {
     );
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "xai"), "Should detect Grok key in env var");
+    assert!(
+        should_detect(&output, "xai"),
+        "Should detect Grok key in env var"
+    );
 }
 
 // ============================================================================
@@ -266,7 +314,10 @@ fn test_grok_env_var_detection() {
 fn test_gemini_api_key_detection() {
     let dir = TestDir::new("gemini-key");
     // Using GOOGLE_API_KEY which has AIza prefix matching gemini-api-key rule
-    dir.write_file("config.js", &format!("const GEMINI_KEY = '{}';", GOOGLE_API_KEY));
+    dir.write_file(
+        "config.js",
+        &format!("const GEMINI_KEY = '{}';", GOOGLE_API_KEY),
+    );
 
     let (output, _) = run_scan(dir.path_str());
     // AIza prefix matches multiple rules: gemini-api-key, gemini-ultra-api-key, gcp-api-key
@@ -288,7 +339,10 @@ fn test_openrouter_api_key_detection() {
     dir.write_file("config.py", &format!("OR_KEY = '{}'", OPENROUTER_API_KEY));
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "openrouter-api-key"), "Should detect OpenRouter API key");
+    assert!(
+        should_detect(&output, "openrouter-api-key"),
+        "Should detect OpenRouter API key"
+    );
 }
 
 // ============================================================================
@@ -301,7 +355,10 @@ fn test_groq_api_key_detection() {
     dir.write_file("config.py", &format!("GROQ_KEY = '{}'", GROQ_API_KEY));
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "groq-api-key"), "Should detect Groq API key");
+    assert!(
+        should_detect(&output, "groq-api-key"),
+        "Should detect Groq API key"
+    );
 }
 
 // ============================================================================
@@ -315,7 +372,10 @@ fn test_claude_3_api_key_detection() {
 
     let (output, _) = run_scan(dir.path_str());
     // Claude 3 token uses sk-ant- prefix which may match anthropic-api-key
-    assert!(should_detect_anthropic_token(&output), "Should detect Claude 3.x API key");
+    assert!(
+        should_detect_anthropic_token(&output),
+        "Should detect Claude 3.x API key"
+    );
 }
 
 #[test]
@@ -324,7 +384,10 @@ fn test_grok_2_api_key_detection() {
     dir.write_file("config.py", &format!("GROK_KEY = '{}'", GROK_2_API_KEY));
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "grok-2-api-key"), "Should detect Grok-2 API key");
+    assert!(
+        should_detect(&output, "grok-2-api-key"),
+        "Should detect Grok-2 API key"
+    );
 }
 
 #[test]
@@ -334,34 +397,55 @@ fn test_gpt_5_api_key_detection() {
 
     let (output, _) = run_scan(dir.path_str());
     // GPT-5 token uses sk- prefix which may match openai-api-key or deepseek
-    assert!(should_detect_gpt5_token(&output), "Should detect GPT-5 API key");
+    assert!(
+        should_detect_gpt5_token(&output),
+        "Should detect GPT-5 API key"
+    );
 }
 
 #[test]
 fn test_gemini_ultra_api_key_detection() {
     let dir = TestDir::new("gemini-ultra-key");
-    dir.write_file("config.py", &format!("GEMINI_KEY = '{}'", GEMINI_ULTRA_API_KEY));
+    dir.write_file(
+        "config.py",
+        &format!("GEMINI_KEY = '{}'", GEMINI_ULTRA_API_KEY),
+    );
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "gemini-ultra-api-key"), "Should detect Gemini Ultra API key");
+    assert!(
+        should_detect(&output, "gemini-ultra-api-key"),
+        "Should detect Gemini Ultra API key"
+    );
 }
 
 #[test]
 fn test_midjourney_v6_api_key_detection() {
     let dir = TestDir::new("midjourney-v6-key");
-    dir.write_file("config.py", &format!("MJ_KEY = '{}'", MIDJOURNEY_V6_API_KEY));
+    dir.write_file(
+        "config.py",
+        &format!("MJ_KEY = '{}'", MIDJOURNEY_V6_API_KEY),
+    );
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "midjourney-v6-api-key"), "Should detect Midjourney V6 API key");
+    assert!(
+        should_detect(&output, "midjourney-v6-api-key"),
+        "Should detect Midjourney V6 API key"
+    );
 }
 
 #[test]
 fn test_stability_ai_v3_key_detection() {
     let dir = TestDir::new("stability-v3-key");
-    dir.write_file("config.py", &format!("STABILITY_KEY = '{}'", STABILITY_AI_V3_KEY));
+    dir.write_file(
+        "config.py",
+        &format!("STABILITY_KEY = '{}'", STABILITY_AI_V3_KEY),
+    );
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "stability-ai-v3-key"), "Should detect Stability AI V3 API key");
+    assert!(
+        should_detect(&output, "stability-ai-v3-key"),
+        "Should detect Stability AI V3 API key"
+    );
 }
 
 // ============================================================================
@@ -371,10 +455,16 @@ fn test_stability_ai_v3_key_detection() {
 #[test]
 fn test_ethereum_private_key_detection() {
     let dir = TestDir::new("ethereum-private-key");
-    dir.write_file("wallet.py", &format!("PRIVATE_KEY = '{}'", ETHEREUM_PRIVATE_KEY));
+    dir.write_file(
+        "wallet.py",
+        &format!("PRIVATE_KEY = '{}'", ETHEREUM_PRIVATE_KEY),
+    );
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "ethereum-private-key"), "Should detect Ethereum private key");
+    assert!(
+        should_detect(&output, "ethereum-private-key"),
+        "Should detect Ethereum private key"
+    );
 }
 
 #[test]
@@ -383,25 +473,40 @@ fn test_ethereum_mnemonic_detection() {
     dir.write_file(".env", &format!("MNEMONIC={}", ETHEREUM_MNEMONIC));
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "ethereum-mnemonic"), "Should detect Ethereum mnemonic");
+    assert!(
+        should_detect(&output, "ethereum-mnemonic"),
+        "Should detect Ethereum mnemonic"
+    );
 }
 
 #[test]
 fn test_solana_private_key_detection() {
     let dir = TestDir::new("solana-private-key");
-    dir.write_file("config.js", &format!("const keypair = {};", SOLANA_PRIVATE_KEY));
+    dir.write_file(
+        "config.js",
+        &format!("const keypair = {};", SOLANA_PRIVATE_KEY),
+    );
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "solana-private-key"), "Should detect Solana private key");
+    assert!(
+        should_detect(&output, "solana-private-key"),
+        "Should detect Solana private key"
+    );
 }
 
 #[test]
 fn test_polygon_private_key_detection() {
     let dir = TestDir::new("polygon-private-key");
-    dir.write_file("matic-wallet.py", &format!("POLYGON_KEY = '{}'", POLYGON_PRIVATE_KEY));
+    dir.write_file(
+        "matic-wallet.py",
+        &format!("POLYGON_KEY = '{}'", POLYGON_PRIVATE_KEY),
+    );
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "polygon-private-key"), "Should detect Polygon private key");
+    assert!(
+        should_detect(&output, "polygon-private-key"),
+        "Should detect Polygon private key"
+    );
 }
 
 #[test]
@@ -410,7 +515,10 @@ fn test_wallet_connect_uri_detection() {
     dir.write_file("dapp.js", &format!("const uri = '{}';", WALLET_CONNECT_URI));
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "walletconnect-uri"), "Should detect WalletConnect URI");
+    assert!(
+        should_detect(&output, "walletconnect-uri"),
+        "Should detect WalletConnect URI"
+    );
 }
 
 #[test]
@@ -419,7 +527,10 @@ fn test_metamask_seed_detection() {
     dir.write_file(".env", &format!("METAMASK_SEED={}", METAMASK_SEED));
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "metamask-seed"), "Should detect MetaMask seed phrase");
+    assert!(
+        should_detect(&output, "metamask-seed"),
+        "Should detect MetaMask seed phrase"
+    );
 }
 
 // ============================================================================
@@ -429,28 +540,46 @@ fn test_metamask_seed_detection() {
 #[test]
 fn test_pq_crystals_kyber_detection() {
     let dir = TestDir::new("pq-kyber");
-    dir.write_file("crypto_config.py", &format!("KYBER_KEY = '{}'", PQ_KYBER_KEY));
+    dir.write_file(
+        "crypto_config.py",
+        &format!("KYBER_KEY = '{}'", PQ_KYBER_KEY),
+    );
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "pq-crystals-kyber"), "Should detect CRYSTALS-Kyber key");
+    assert!(
+        should_detect(&output, "pq-crystals-kyber"),
+        "Should detect CRYSTALS-Kyber key"
+    );
 }
 
 #[test]
 fn test_pq_crystals_dilithium_detection() {
     let dir = TestDir::new("pq-dilithium");
-    dir.write_file("pq_keys.py", &format!("DILITHIUM_PRIVATE = '{}'", PQ_DILITHIUM_KEY));
+    dir.write_file(
+        "pq_keys.py",
+        &format!("DILITHIUM_PRIVATE = '{}'", PQ_DILITHIUM_KEY),
+    );
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "pq-crystals-dilithium"), "Should detect CRYSTALS-Dilithium key");
+    assert!(
+        should_detect(&output, "pq-crystals-dilithium"),
+        "Should detect CRYSTALS-Dilithium key"
+    );
 }
 
 #[test]
 fn test_pq_falcon_detection() {
     let dir = TestDir::new("pq-falcon");
-    dir.write_file("quantum_crypto.py", &format!("FALCON_KEY = '{}'", PQ_FALCON_KEY));
+    dir.write_file(
+        "quantum_crypto.py",
+        &format!("FALCON_KEY = '{}'", PQ_FALCON_KEY),
+    );
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "pq-falcon"), "Should detect Falcon signature key");
+    assert!(
+        should_detect(&output, "pq-falcon"),
+        "Should detect Falcon signature key"
+    );
 }
 
 #[test]
@@ -459,7 +588,10 @@ fn test_pq_sphincs_detection() {
     dir.write_file("crypto.py", &format!("SPHINCS_KEY = '{}'", PQ_SPHINCS_KEY));
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "pq-sphincs"), "Should detect SPHINCS+ key");
+    assert!(
+        should_detect(&output, "pq-sphincs"),
+        "Should detect SPHINCS+ key"
+    );
 }
 
 #[test]
@@ -468,7 +600,10 @@ fn test_qkd_key_detection() {
     dir.write_file(".env", &format!("QKD_KEY={}", QKD_KEY));
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "qkd-key"), "Should detect Quantum Key Distribution key");
+    assert!(
+        should_detect(&output, "qkd-key"),
+        "Should detect Quantum Key Distribution key"
+    );
 }
 
 // ============================================================================
@@ -478,10 +613,16 @@ fn test_qkd_key_detection() {
 #[test]
 fn test_huggingface_model_token_detection() {
     let dir = TestDir::new("hf-model-token");
-    dir.write_file("model_config.py", &format!("HF_MODEL_TOKEN = '{}'", HF_MODEL_TOKEN));
+    dir.write_file(
+        "model_config.py",
+        &format!("HF_MODEL_TOKEN = '{}'", HF_MODEL_TOKEN),
+    );
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "huggingface-model-token"), "Should detect Hugging Face model token");
+    assert!(
+        should_detect(&output, "huggingface-model-token"),
+        "Should detect Hugging Face model token"
+    );
 }
 
 #[test]
@@ -490,43 +631,70 @@ fn test_weights_and_biases_api_key_detection() {
     dir.write_file(".env", &format!("WANDB_API_KEY={}", WANDB_API_KEY));
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "weights-and-biases"), "Should detect Weights & Biases API key");
+    assert!(
+        should_detect(&output, "weights-and-biases"),
+        "Should detect Weights & Biases API key"
+    );
 }
 
 #[test]
 fn test_mlflow_tracking_uri_detection() {
     let dir = TestDir::new("mlflow-tracking");
-    dir.write_file("ml_config.py", &format!("MLFLOW_TRACKING_URI = '{}'", MLFLOW_TRACKING_URI));
+    dir.write_file(
+        "ml_config.py",
+        &format!("MLFLOW_TRACKING_URI = '{}'", MLFLOW_TRACKING_URI),
+    );
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "mlflow-tracking-uri"), "Should detect MLflow tracking URI");
+    assert!(
+        should_detect(&output, "mlflow-tracking-uri"),
+        "Should detect MLflow tracking URI"
+    );
 }
 
 #[test]
 fn test_aws_model_bucket_detection() {
     let dir = TestDir::new("aws-model-bucket");
-    dir.write_file("model_storage.py", &format!("AWS_MODEL_BUCKET = '{}'", AWS_MODEL_BUCKET));
+    dir.write_file(
+        "model_storage.py",
+        &format!("AWS_MODEL_BUCKET = '{}'", AWS_MODEL_BUCKET),
+    );
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "aws-s3-model-bucket"), "Should detect AWS S3 model bucket");
+    assert!(
+        should_detect(&output, "aws-s3-model-bucket"),
+        "Should detect AWS S3 model bucket"
+    );
 }
 
 #[test]
 fn test_gcp_model_bucket_detection() {
     let dir = TestDir::new("gcp-model-bucket");
-    dir.write_file("gcp_models.py", &format!("GCP_MODEL_BUCKET = '{}'", GCP_MODEL_BUCKET));
+    dir.write_file(
+        "gcp_models.py",
+        &format!("GCP_MODEL_BUCKET = '{}'", GCP_MODEL_BUCKET),
+    );
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "gcp-model-bucket"), "Should detect GCP model bucket");
+    assert!(
+        should_detect(&output, "gcp-model-bucket"),
+        "Should detect GCP model bucket"
+    );
 }
 
 #[test]
 fn test_dvc_remote_token_detection() {
     let dir = TestDir::new("dvc-remote");
-    dir.write_file("dvc_config.py", &format!("DVC_REMOTE_TOKEN = '{}'", DVC_REMOTE_TOKEN));
+    dir.write_file(
+        "dvc_config.py",
+        &format!("DVC_REMOTE_TOKEN = '{}'", DVC_REMOTE_TOKEN),
+    );
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "dvc-remote-token"), "Should detect DVC remote storage token");
+    assert!(
+        should_detect(&output, "dvc-remote-token"),
+        "Should detect DVC remote storage token"
+    );
 }
 
 // ============================================================================
@@ -536,10 +704,16 @@ fn test_dvc_remote_token_detection() {
 #[test]
 fn test_oauth21_access_token_detection() {
     let dir = TestDir::new("oauth21-token");
-    dir.write_file("auth_config.py", &format!("OAUTH21_TOKEN = '{}'", OAUTH21_ACCESS_TOKEN));
+    dir.write_file(
+        "auth_config.py",
+        &format!("OAUTH21_TOKEN = '{}'", OAUTH21_ACCESS_TOKEN),
+    );
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "oauth21-access-token"), "Should detect OAuth 2.1 access token");
+    assert!(
+        should_detect(&output, "oauth21-access-token"),
+        "Should detect OAuth 2.1 access token"
+    );
 }
 
 #[test]
@@ -548,16 +722,25 @@ fn test_jwt_access_token_detection() {
     dir.write_file("auth.py", &format!("ACCESS_TOKEN = '{}'", JWT_ACCESS_TOKEN));
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "jwt-access-token"), "Should detect JWT access token");
+    assert!(
+        should_detect(&output, "jwt-access-token"),
+        "Should detect JWT access token"
+    );
 }
 
 #[test]
 fn test_saml_assertion_detection() {
     let dir = TestDir::new("saml-assertion");
-    dir.write_file("sso_config.py", &format!("SAML_ASSERTION = '{}'", SAML_ASSERTION));
+    dir.write_file(
+        "sso_config.py",
+        &format!("SAML_ASSERTION = '{}'", SAML_ASSERTION),
+    );
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "saml-assertion"), "Should detect SAML assertion");
+    assert!(
+        should_detect(&output, "saml-assertion"),
+        "Should detect SAML assertion"
+    );
 }
 
 #[test]
@@ -566,7 +749,10 @@ fn test_oidc_id_token_detection() {
     dir.write_file("oidc_config.py", &format!("ID_TOKEN = '{}'", OIDC_ID_TOKEN));
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "oidc-id-token"), "Should detect OIDC ID token");
+    assert!(
+        should_detect(&output, "oidc-id-token"),
+        "Should detect OIDC ID token"
+    );
 }
 
 #[test]
@@ -575,16 +761,25 @@ fn test_gcp_service_account_token_detection() {
     dir.write_file(".env", &format!("GCP_SA_TOKEN={}", GCP_SA_TOKEN));
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "gcp-service-account-token"), "Should detect GCP service account token");
+    assert!(
+        should_detect(&output, "gcp-service-account-token"),
+        "Should detect GCP service account token"
+    );
 }
 
 #[test]
 fn test_workload_identity_token_detection() {
     let dir = TestDir::new("workload-identity");
-    dir.write_file("k8s_secret.py", &format!("WORKLOAD_IDENTITY_TOKEN = '{}'", WORKLOAD_IDENTITY_TOKEN));
+    dir.write_file(
+        "k8s_secret.py",
+        &format!("WORKLOAD_IDENTITY_TOKEN = '{}'", WORKLOAD_IDENTITY_TOKEN),
+    );
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "workload-identity-token"), "Should detect workload identity token");
+    assert!(
+        should_detect(&output, "workload-identity-token"),
+        "Should detect workload identity token"
+    );
 }
 
 // ============================================================================
@@ -594,14 +789,20 @@ fn test_workload_identity_token_detection() {
 #[test]
 fn test_toml_config_scanning() {
     let dir = TestDir::new("toml-config");
-    dir.write_file("config.toml", &format!(r#"
+    dir.write_file(
+        "config.toml",
+        &format!(
+            r#"
 [database]
 host = "localhost"
 password = "{}"
 
 [api]
 key = "{}"
-"#, POSTGRES_URI, OPENAI_API_KEY));
+"#,
+            POSTGRES_URI, OPENAI_API_KEY
+        ),
+    );
 
     let (output, _) = run_scan(dir.path_str());
     // Postgres URI may match postgres-uri or generic-password (via password= key)
@@ -609,13 +810,19 @@ key = "{}"
         should_detect(&output, "postgres-uri") || should_detect(&output, "generic-password"),
         "Should detect secrets in TOML files"
     );
-    assert!(should_detect_sk_token(&output), "Should detect API keys in TOML files");
+    assert!(
+        should_detect_sk_token(&output),
+        "Should detect API keys in TOML files"
+    );
 }
 
 #[test]
 fn test_yaml_anchors_scanning() {
     let dir = TestDir::new("yaml-anchors");
-    dir.write_file("config.yaml", &format!(r#"
+    dir.write_file(
+        "config.yaml",
+        &format!(
+            r#"
 common: &common
   api_key: "{}"
   secret: "{}"
@@ -623,18 +830,33 @@ common: &common
 production:
   <<: *common
   database_url: "{}"
-"#, OPENAI_API_KEY, AWS_ACCESS_KEY_ID, POSTGRES_URI));
+"#,
+            OPENAI_API_KEY, AWS_ACCESS_KEY_ID, POSTGRES_URI
+        ),
+    );
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect_sk_token(&output), "Should detect secrets in YAML with anchors");
-    assert!(should_detect(&output, "aws-access-key-id"), "Should detect AWS keys in YAML anchors");
-    assert!(should_detect(&output, "postgres-uri"), "Should detect database URIs in YAML");
+    assert!(
+        should_detect_sk_token(&output),
+        "Should detect secrets in YAML with anchors"
+    );
+    assert!(
+        should_detect(&output, "aws-access-key-id"),
+        "Should detect AWS keys in YAML anchors"
+    );
+    assert!(
+        should_detect(&output, "postgres-uri"),
+        "Should detect database URIs in YAML"
+    );
 }
 
 #[test]
 fn test_json5_config_scanning() {
     let dir = TestDir::new("json5-config");
-    dir.write_file("config.json5", &format!(r#"{{
+    dir.write_file(
+        "config.json5",
+        &format!(
+            r#"{{
   // JSON5 config with secrets
   api: {{
     key: "{}",
@@ -643,17 +865,29 @@ fn test_json5_config_scanning() {
   database: {{
     url: "{}"
   }}
-}}"#, OPENAI_API_KEY, AWS_ACCESS_KEY_ID, POSTGRES_URI));
+}}"#,
+            OPENAI_API_KEY, AWS_ACCESS_KEY_ID, POSTGRES_URI
+        ),
+    );
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect_sk_token(&output), "Should detect secrets in JSON5 files");
-    assert!(should_detect(&output, "aws-access-key-id"), "Should detect AWS keys in JSON5");
+    assert!(
+        should_detect_sk_token(&output),
+        "Should detect secrets in JSON5 files"
+    );
+    assert!(
+        should_detect(&output, "aws-access-key-id"),
+        "Should detect AWS keys in JSON5"
+    );
 }
 
 #[test]
 fn test_hcl2_config_scanning() {
     let dir = TestDir::new("hcl2-config");
-    dir.write_file("config.hcl", &format!(r#"
+    dir.write_file(
+        "config.hcl",
+        &format!(
+            r#"
 resource "aws_instance" "example" {{
   ami           = "ami-12345"
   instance_type = "t2.micro"
@@ -667,11 +901,20 @@ resource "aws_instance" "example" {{
 variable "database_url" {{
   default = "{}"
 }}
-"#, OPENAI_API_KEY, AWS_ACCESS_KEY_ID, POSTGRES_URI));
+"#,
+            OPENAI_API_KEY, AWS_ACCESS_KEY_ID, POSTGRES_URI
+        ),
+    );
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect_sk_token(&output), "Should detect secrets in HCL2 files");
-    assert!(should_detect(&output, "aws-access-key-id"), "Should detect AWS keys in HCL2");
+    assert!(
+        should_detect_sk_token(&output),
+        "Should detect secrets in HCL2 files"
+    );
+    assert!(
+        should_detect(&output, "aws-access-key-id"),
+        "Should detect AWS keys in HCL2"
+    );
 }
 
 // ============================================================================
@@ -681,7 +924,9 @@ variable "database_url" {{
 #[test]
 fn test_false_positive_rate_on_clean_code() {
     let dir = TestDir::new("clean-code-false-positives");
-    dir.write_file("main.py", r#"
+    dir.write_file(
+        "main.py",
+        r#"
 # Clean Python code with no secrets
 def main():
     api_key = "this-is-not-a-real-key"
@@ -696,7 +941,8 @@ def main():
 
 if __name__ == "__main__":
     main()
-"#);
+"#,
+    );
 
     let (output, _) = run_scan(dir.path_str());
     let findings = count_findings(&output);
@@ -750,7 +996,9 @@ Never commit real secrets to version control.
 #[test]
 fn test_false_positive_rate_on_test_files() {
     let dir = TestDir::new("test-files-false-positives");
-    dir.write_file("test_config.py", r#"
+    dir.write_file(
+        "test_config.py",
+        r#"
 # Test configuration file
 TEST_API_KEY = "test_key_12345"
 MOCK_TOKEN = "mock_token_abcdef"
@@ -762,7 +1010,8 @@ class TestAPI:
         # Test with obviously fake key
         fake_key = "sk-test12345678901234567890"
         assert len(fake_key) > 10
-"#);
+"#,
+    );
 
     let (output, _) = run_scan(dir.path_str());
     let findings = count_findings(&output);
@@ -779,20 +1028,29 @@ fn test_detection_accuracy_real_vs_fake() {
     let dir = TestDir::new("accuracy-real-vs-fake");
 
     // Add real-looking but fake secrets that should be detected
-    dir.write_file("real_config.py", &format!(r#"
+    dir.write_file(
+        "real_config.py",
+        &format!(
+            r#"
 OPENAI_KEY = "{}"
 GITHUB_TOKEN = "{}"
 AWS_KEY = "{}"
-"#, OPENAI_API_KEY, GITHUB_PAT, AWS_ACCESS_KEY_ID));
+"#,
+            OPENAI_API_KEY, GITHUB_PAT, AWS_ACCESS_KEY_ID
+        ),
+    );
 
     // Add obviously fake/placeholder values that should NOT be detected
-    dir.write_file("fake_config.py", r#"
+    dir.write_file(
+        "fake_config.py",
+        r#"
 FAKE_OPENAI = "sk-1234567890abcdef"
 FAKE_GITHUB = "ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 FAKE_AWS = "AKIA1234567890ABCDEF"
 PLACEHOLDER = "your_api_key_here"
 TEMPLATE = "${API_KEY}"
-"#);
+"#,
+    );
 
     let (output, _) = run_scan(dir.path_str());
     let findings = count_findings(&output);
@@ -824,7 +1082,10 @@ fn test_performance_large_file_scan() {
 
     // Add lots of clean content
     for i in 0..1000 {
-        content.push_str(&format!("def function_{}():\n    print('This is function {}')\n    return {}\n\n", i, i, i));
+        content.push_str(&format!(
+            "def function_{}():\n    print('This is function {}')\n    return {}\n\n",
+            i, i, i
+        ));
     }
 
     // Bury some secrets in the middle
@@ -833,7 +1094,10 @@ fn test_performance_large_file_scan() {
 
     // Add more clean content
     for i in 1000..2000 {
-        content.push_str(&format!("class Class{}:\n    def __init__(self):\n        self.value = {}\n\n", i, i));
+        content.push_str(&format!(
+            "class Class{}:\n    def __init__(self):\n        self.value = {}\n\n",
+            i, i
+        ));
     }
 
     dir.write_file("large_file.py", &content);
@@ -850,8 +1114,14 @@ fn test_performance_large_file_scan() {
     );
 
     // Should still find the secrets
-    assert!(should_detect_sk_token(&output), "Should find OpenAI key in large file");
-    assert!(should_detect(&output, "github-pat"), "Should find GitHub token in large file");
+    assert!(
+        should_detect_sk_token(&output),
+        "Should find OpenAI key in large file"
+    );
+    assert!(
+        should_detect(&output, "github-pat"),
+        "Should find GitHub token in large file"
+    );
 }
 
 #[test]
@@ -859,18 +1129,33 @@ fn test_edge_case_detection_boundary_conditions() {
     let dir = TestDir::new("boundary-conditions");
 
     // Test secrets at file boundaries
-    dir.write_file("start_secret.py", &format!("{}=os.getenv('KEY')", OPENAI_API_KEY));
+    dir.write_file(
+        "start_secret.py",
+        &format!("{}=os.getenv('KEY')", OPENAI_API_KEY),
+    );
     dir.write_file("end_secret.py", &format!("config = {}\n", GITHUB_PAT));
 
     // Test secrets with unusual whitespace
-    dir.write_file("whitespace.py", &format!("TOKEN   =   '{}'\nKEY\t=\t'{}'", AWS_ACCESS_KEY_ID, ANTHROPIC_API_KEY));
+    dir.write_file(
+        "whitespace.py",
+        &format!(
+            "TOKEN   =   '{}'\nKEY\t=\t'{}'",
+            AWS_ACCESS_KEY_ID, ANTHROPIC_API_KEY
+        ),
+    );
 
     // Test secrets in various quote types
-    dir.write_file("quotes.py", &format!(r#"
+    dir.write_file(
+        "quotes.py",
+        &format!(
+            r#"
 SINGLE = '{}'
 DOUBLE = "{}"
 NO_QUOTES = {}
-"#, OPENAI_API_KEY, GITHUB_PAT, AWS_ACCESS_KEY_ID));
+"#,
+            OPENAI_API_KEY, GITHUB_PAT, AWS_ACCESS_KEY_ID
+        ),
+    );
 
     let (output, _) = run_scan(dir.path_str());
     let findings = count_findings(&output);
@@ -893,7 +1178,10 @@ fn test_perplexity_api_key_detection() {
     dir.write_file("config.py", &format!("PPLX_KEY = '{}'", PERPLEXITY_API_KEY));
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "perplexity-api-key"), "Should detect Perplexity API key");
+    assert!(
+        should_detect(&output, "perplexity-api-key"),
+        "Should detect Perplexity API key"
+    );
 }
 
 // ============================================================================
@@ -906,7 +1194,10 @@ fn test_fireworks_api_key_detection() {
     dir.write_file("config.py", &format!("FW_KEY = '{}'", FIREWORKS_API_KEY));
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "fireworks-api-key"), "Should detect Fireworks API key");
+    assert!(
+        should_detect(&output, "fireworks-api-key"),
+        "Should detect Fireworks API key"
+    );
 }
 
 // ============================================================================
@@ -919,7 +1210,10 @@ fn test_cerebras_api_key_detection() {
     dir.write_file("config.py", &format!("CSK_KEY = '{}'", CEREBRAS_API_KEY));
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "cerebras-api-key"), "Should detect Cerebras API key");
+    assert!(
+        should_detect(&output, "cerebras-api-key"),
+        "Should detect Cerebras API key"
+    );
 }
 
 // ============================================================================
@@ -932,7 +1226,10 @@ fn test_huggingface_token_detection() {
     dir.write_file("config.py", &format!("HF_TOKEN = '{}'", HUGGINGFACE_TOKEN));
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "huggingface-token"), "Should detect Hugging Face token");
+    assert!(
+        should_detect(&output, "huggingface-token"),
+        "Should detect Hugging Face token"
+    );
 }
 
 // ============================================================================
@@ -942,10 +1239,16 @@ fn test_huggingface_token_detection() {
 #[test]
 fn test_replicate_token_detection() {
     let dir = TestDir::new("replicate-token");
-    dir.write_file("config.py", &format!("REPLICATE_TOKEN = '{}'", REPLICATE_TOKEN));
+    dir.write_file(
+        "config.py",
+        &format!("REPLICATE_TOKEN = '{}'", REPLICATE_TOKEN),
+    );
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "replicate-token"), "Should detect Replicate token");
+    assert!(
+        should_detect(&output, "replicate-token"),
+        "Should detect Replicate token"
+    );
 }
 
 // ============================================================================
@@ -958,16 +1261,25 @@ fn test_slack_bot_token_detection() {
     dir.write_file("config.py", &format!("SLACK_TOKEN = '{}'", SLACK_BOT_TOKEN));
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "slack-bot-token"), "Should detect Slack bot token");
+    assert!(
+        should_detect(&output, "slack-bot-token"),
+        "Should detect Slack bot token"
+    );
 }
 
 #[test]
 fn test_slack_user_token_detection() {
     let dir = TestDir::new("slack-user");
-    dir.write_file("config.py", &format!("SLACK_TOKEN = '{}'", SLACK_USER_TOKEN));
+    dir.write_file(
+        "config.py",
+        &format!("SLACK_TOKEN = '{}'", SLACK_USER_TOKEN),
+    );
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "slack-user-token"), "Should detect Slack user token");
+    assert!(
+        should_detect(&output, "slack-user-token"),
+        "Should detect Slack user token"
+    );
 }
 
 // ============================================================================
@@ -977,16 +1289,25 @@ fn test_slack_user_token_detection() {
 #[test]
 fn test_stripe_secret_key_detection() {
     let dir = TestDir::new("stripe-secret");
-    dir.write_file("config.py", &format!("STRIPE_KEY = '{}'", STRIPE_SECRET_KEY));
+    dir.write_file(
+        "config.py",
+        &format!("STRIPE_KEY = '{}'", STRIPE_SECRET_KEY),
+    );
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "stripe-secret-key"), "Should detect Stripe secret key");
+    assert!(
+        should_detect(&output, "stripe-secret-key"),
+        "Should detect Stripe secret key"
+    );
 }
 
 #[test]
 fn test_stripe_restricted_key_detection() {
     let dir = TestDir::new("stripe-restricted");
-    dir.write_file("config.py", &format!("STRIPE_KEY = '{}'", STRIPE_RESTRICTED_KEY));
+    dir.write_file(
+        "config.py",
+        &format!("STRIPE_KEY = '{}'", STRIPE_RESTRICTED_KEY),
+    );
 
     let (output, _) = run_scan(dir.path_str());
     assert!(
@@ -1005,7 +1326,10 @@ fn test_sendgrid_api_key_detection() {
     dir.write_file("config.py", &format!("SG_KEY = '{}'", SENDGRID_API_KEY));
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "sendgrid-api-key"), "Should detect SendGrid API key");
+    assert!(
+        should_detect(&output, "sendgrid-api-key"),
+        "Should detect SendGrid API key"
+    );
 }
 
 // ============================================================================
@@ -1015,10 +1339,16 @@ fn test_sendgrid_api_key_detection() {
 #[test]
 fn test_npm_token_detection() {
     let dir = TestDir::new("npm-token");
-    dir.write_file(".npmrc", &format!("//registry.npmjs.org/:_authToken={}", NPM_TOKEN));
+    dir.write_file(
+        ".npmrc",
+        &format!("//registry.npmjs.org/:_authToken={}", NPM_TOKEN),
+    );
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "npm-token"), "Should detect npm token");
+    assert!(
+        should_detect(&output, "npm-token"),
+        "Should detect npm token"
+    );
 }
 
 // ============================================================================
@@ -1031,7 +1361,10 @@ fn test_pypi_token_detection() {
     dir.write_file(".pypirc", &format!("password = {}", PYPI_TOKEN));
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "pypi-token"), "Should detect PyPI token");
+    assert!(
+        should_detect(&output, "pypi-token"),
+        "Should detect PyPI token"
+    );
 }
 
 // ============================================================================
@@ -1044,7 +1377,10 @@ fn test_rsa_private_key_detection() {
     dir.write_file("id_rsa", RSA_PRIVATE_KEY);
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "private-key-rsa"), "Should detect RSA private key");
+    assert!(
+        should_detect(&output, "private-key-rsa"),
+        "Should detect RSA private key"
+    );
 }
 
 #[test]
@@ -1053,7 +1389,10 @@ fn test_openssh_private_key_detection() {
     dir.write_file("id_ed25519", OPENSSH_PRIVATE_KEY);
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "private-key-openssh"), "Should detect OpenSSH private key");
+    assert!(
+        should_detect(&output, "private-key-openssh"),
+        "Should detect OpenSSH private key"
+    );
 }
 
 #[test]
@@ -1062,7 +1401,10 @@ fn test_ec_private_key_detection() {
     dir.write_file("ec_key.pem", EC_PRIVATE_KEY);
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "private-key-ec"), "Should detect EC private key");
+    assert!(
+        should_detect(&output, "private-key-ec"),
+        "Should detect EC private key"
+    );
 }
 
 // ============================================================================
@@ -1087,7 +1429,10 @@ fn test_mysql_uri_detection() {
     dir.write_file("config.py", &format!("DB_URL = '{}'", MYSQL_URI));
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "mysql-uri"), "Should detect MySQL URI");
+    assert!(
+        should_detect(&output, "mysql-uri"),
+        "Should detect MySQL URI"
+    );
 }
 
 #[test]
@@ -1132,16 +1477,25 @@ fn test_redis_uri_detection() {
     dir.write_file(".env", &format!("REDIS_URL={}", REDIS_URI));
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "redis-uri"), "Should detect Redis URI");
+    assert!(
+        should_detect(&output, "redis-uri"),
+        "Should detect Redis URI"
+    );
 }
 
 #[test]
 fn test_jdbc_detection() {
     let dir = TestDir::new("jdbc");
-    dir.write_file("application.properties", &format!("spring.datasource.url={}", JDBC_POSTGRES));
+    dir.write_file(
+        "application.properties",
+        &format!("spring.datasource.url={}", JDBC_POSTGRES),
+    );
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "jdbc-connection"), "Should detect JDBC connection string");
+    assert!(
+        should_detect(&output, "jdbc-connection"),
+        "Should detect JDBC connection string"
+    );
 }
 
 // ============================================================================
@@ -1154,16 +1508,25 @@ fn test_ollama_endpoint_detection() {
     dir.write_file(".env", &format!("OLLAMA_HOST={}", OLLAMA_ENDPOINT));
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "ollama"), "Should detect Ollama endpoint");
+    assert!(
+        should_detect(&output, "ollama"),
+        "Should detect Ollama endpoint"
+    );
 }
 
 #[test]
 fn test_lmstudio_endpoint_detection() {
     let dir = TestDir::new("lmstudio-endpoint");
-    dir.write_file("config.py", &format!("LMSTUDIO_URL = '{}'", LMSTUDIO_ENDPOINT));
+    dir.write_file(
+        "config.py",
+        &format!("LMSTUDIO_URL = '{}'", LMSTUDIO_ENDPOINT),
+    );
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "lmstudio"), "Should detect LM Studio endpoint");
+    assert!(
+        should_detect(&output, "lmstudio"),
+        "Should detect LM Studio endpoint"
+    );
 }
 
 #[test]
@@ -1178,10 +1541,16 @@ fn test_exo_endpoint_detection() {
 #[test]
 fn test_localai_endpoint_detection() {
     let dir = TestDir::new("localai-endpoint");
-    dir.write_file("config.yaml", &format!("localai_host: {}", LOCALAI_ENDPOINT));
+    dir.write_file(
+        "config.yaml",
+        &format!("localai_host: {}", LOCALAI_ENDPOINT),
+    );
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "localai"), "Should detect LocalAI endpoint");
+    assert!(
+        should_detect(&output, "localai"),
+        "Should detect LocalAI endpoint"
+    );
 }
 
 #[test]
@@ -1190,7 +1559,10 @@ fn test_vllm_endpoint_detection() {
     dir.write_file(".env", &format!("VLLM_BASE_URL={}", VLLM_ENDPOINT));
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "vllm"), "Should detect vLLM endpoint");
+    assert!(
+        should_detect(&output, "vllm"),
+        "Should detect vLLM endpoint"
+    );
 }
 
 // ============================================================================
@@ -1362,7 +1734,10 @@ fn test_env_file_scanning() {
     dir.write_file(".env", &common::sample_files::env_file());
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(count_findings(&output) >= 5, "Should detect multiple secrets in .env file");
+    assert!(
+        count_findings(&output) >= 5,
+        "Should detect multiple secrets in .env file"
+    );
 }
 
 #[test]
@@ -1371,7 +1746,10 @@ fn test_json_config_scanning() {
     dir.write_file("config.json", &common::sample_files::config_json());
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(count_findings(&output) >= 2, "Should detect secrets in JSON config");
+    assert!(
+        count_findings(&output) >= 2,
+        "Should detect secrets in JSON config"
+    );
 }
 
 #[test]
@@ -1380,7 +1758,10 @@ fn test_yaml_config_scanning() {
     dir.write_file("config.yaml", &common::sample_files::yaml_config());
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(count_findings(&output) >= 3, "Should detect secrets in YAML config");
+    assert!(
+        count_findings(&output) >= 3,
+        "Should detect secrets in YAML config"
+    );
 }
 
 #[test]
@@ -1389,7 +1770,10 @@ fn test_python_config_scanning() {
     dir.write_file("config.py", &common::sample_files::python_config());
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(count_findings(&output) >= 4, "Should detect secrets in Python config");
+    assert!(
+        count_findings(&output) >= 4,
+        "Should detect secrets in Python config"
+    );
 }
 
 #[test]
@@ -1398,16 +1782,25 @@ fn test_javascript_config_scanning() {
     dir.write_file("config.js", &common::sample_files::javascript_config());
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(count_findings(&output) >= 3, "Should detect secrets in JavaScript config");
+    assert!(
+        count_findings(&output) >= 3,
+        "Should detect secrets in JavaScript config"
+    );
 }
 
 #[test]
 fn test_docker_compose_scanning() {
     let dir = TestDir::new("docker-compose");
-    dir.write_file("docker-compose.yml", &common::sample_files::docker_compose());
+    dir.write_file(
+        "docker-compose.yml",
+        &common::sample_files::docker_compose(),
+    );
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(count_findings(&output) >= 2, "Should detect secrets in docker-compose");
+    assert!(
+        count_findings(&output) >= 2,
+        "Should detect secrets in docker-compose"
+    );
 }
 
 #[test]
@@ -1416,7 +1809,10 @@ fn test_k8s_secret_scanning() {
     dir.write_file("secret.yaml", &common::sample_files::k8s_secret());
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(count_findings(&output) >= 2, "Should detect secrets in K8s manifest");
+    assert!(
+        count_findings(&output) >= 2,
+        "Should detect secrets in K8s manifest"
+    );
 }
 
 #[test]
@@ -1425,7 +1821,10 @@ fn test_terraform_scanning() {
     dir.write_file("main.tf", &common::sample_files::terraform_file());
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(count_findings(&output) >= 1, "Should detect secrets in Terraform");
+    assert!(
+        count_findings(&output) >= 1,
+        "Should detect secrets in Terraform"
+    );
 }
 
 // ============================================================================
@@ -1456,7 +1855,10 @@ fn test_binary_files_skipped() {
 fn test_node_modules_skipped() {
     let dir = TestDir::new("node-modules");
     dir.create_dir("node_modules/some-package");
-    dir.write_file("node_modules/some-package/config.js", &format!("const key = '{}';", OPENAI_API_KEY));
+    dir.write_file(
+        "node_modules/some-package/config.js",
+        &format!("const key = '{}';", OPENAI_API_KEY),
+    );
     dir.write_file("src/app.js", "console.log('clean');");
 
     let (output, _) = run_scan(dir.path_str());
@@ -1484,7 +1886,10 @@ fn test_git_directory_skipped() {
 fn test_vendor_directory_skipped() {
     let dir = TestDir::new("vendor-dir");
     dir.create_dir("vendor/package");
-    dir.write_file("vendor/package/config.go", &format!("const key = \"{}\"", OPENAI_API_KEY));
+    dir.write_file(
+        "vendor/package/config.go",
+        &format!("const key = \"{}\"", OPENAI_API_KEY),
+    );
 
     let (output, _) = run_scan(dir.path_str());
     assert!(
@@ -1504,7 +1909,10 @@ fn test_json_output_format() {
 
     let output = run_scan_json(dir.path_str());
     assert!(output.contains("\"version\""), "JSON should have version");
-    assert!(output.contains("\"findings\""), "JSON should have findings array");
+    assert!(
+        output.contains("\"findings\""),
+        "JSON should have findings array"
+    );
     assert!(output.contains("\"rule_id\""), "JSON should have rule_id");
 }
 
@@ -1520,7 +1928,10 @@ fn test_sarif_output_format() {
 
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(stdout.contains("\"$schema\""), "SARIF should have schema");
-    assert!(stdout.contains("\"version\": \"2.1.0\""), "SARIF should be version 2.1.0");
+    assert!(
+        stdout.contains("\"version\": \"2.1.0\""),
+        "SARIF should be version 2.1.0"
+    );
     assert!(stdout.contains("\"runs\""), "SARIF should have runs array");
 }
 
@@ -1538,7 +1949,11 @@ fn test_fail_on_leak_exit_code() {
         .output()
         .expect("Failed to run scanner");
 
-    assert_eq!(output.status.code(), Some(1), "Should exit with code 1 when secrets found");
+    assert_eq!(
+        output.status.code(),
+        Some(1),
+        "Should exit with code 1 when secrets found"
+    );
 }
 
 #[test]
@@ -1551,13 +1966,20 @@ fn test_no_secrets_exit_code() {
         .output()
         .expect("Failed to run scanner");
 
-    assert_eq!(output.status.code(), Some(0), "Should exit with code 0 when no secrets found");
+    assert_eq!(
+        output.status.code(),
+        Some(0),
+        "Should exit with code 0 when no secrets found"
+    );
 }
 
 #[test]
 fn test_rule_filtering_only() {
     let dir = TestDir::new("filter-only");
-    dir.write_file("config.py", &format!("OPENAI = '{}'\nGITHUB = '{}'", OPENAI_API_KEY, GITHUB_PAT));
+    dir.write_file(
+        "config.py",
+        &format!("OPENAI = '{}'\nGITHUB = '{}'", OPENAI_API_KEY, GITHUB_PAT),
+    );
 
     let output = std::process::Command::new("cargo")
         .args(["run", "--", dir.path_str(), "--only", "github-pat"])
@@ -1566,13 +1988,19 @@ fn test_rule_filtering_only() {
 
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(stdout.contains("github-pat"), "Should detect github-pat");
-    assert!(!stdout.contains("openai-api-key"), "Should NOT detect openai (filtered out)");
+    assert!(
+        !stdout.contains("openai-api-key"),
+        "Should NOT detect openai (filtered out)"
+    );
 }
 
 #[test]
 fn test_rule_filtering_exclude() {
     let dir = TestDir::new("filter-exclude");
-    dir.write_file("config.py", &format!("OPENAI = '{}'\nGITHUB = '{}'", OPENAI_API_KEY, GITHUB_PAT));
+    dir.write_file(
+        "config.py",
+        &format!("OPENAI = '{}'\nGITHUB = '{}'", OPENAI_API_KEY, GITHUB_PAT),
+    );
 
     let output = std::process::Command::new("cargo")
         .args(["run", "--", dir.path_str(), "--exclude", "openai-api-key"])
@@ -1580,7 +2008,10 @@ fn test_rule_filtering_exclude() {
         .expect("Failed to run scanner");
 
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(!stdout.contains("openai-api-key"), "Should NOT detect openai (excluded)");
+    assert!(
+        !stdout.contains("openai-api-key"),
+        "Should NOT detect openai (excluded)"
+    );
 }
 
 // ============================================================================
@@ -1592,37 +2023,61 @@ fn test_rule_filtering_exclude() {
 #[test]
 fn test_shopify_access_token_detection() {
     let dir = TestDir::new("shopify-access");
-    dir.write_file("config.js", &format!("const SHOPIFY_TOKEN = '{}';", SHOPIFY_ACCESS_TOKEN));
+    dir.write_file(
+        "config.js",
+        &format!("const SHOPIFY_TOKEN = '{}';", SHOPIFY_ACCESS_TOKEN),
+    );
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "shopify-access-token"), "Should detect Shopify access token");
+    assert!(
+        should_detect(&output, "shopify-access-token"),
+        "Should detect Shopify access token"
+    );
 }
 
 #[test]
 fn test_shopify_custom_app_token_detection() {
     let dir = TestDir::new("shopify-custom");
-    dir.write_file(".env", &format!("SHOPIFY_TOKEN={}", SHOPIFY_CUSTOM_APP_TOKEN));
+    dir.write_file(
+        ".env",
+        &format!("SHOPIFY_TOKEN={}", SHOPIFY_CUSTOM_APP_TOKEN),
+    );
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "shopify-custom-app-token"), "Should detect Shopify custom app token");
+    assert!(
+        should_detect(&output, "shopify-custom-app-token"),
+        "Should detect Shopify custom app token"
+    );
 }
 
 #[test]
 fn test_shopify_private_app_token_detection() {
     let dir = TestDir::new("shopify-private");
-    dir.write_file("config.py", &format!("token = '{}'", SHOPIFY_PRIVATE_APP_TOKEN));
+    dir.write_file(
+        "config.py",
+        &format!("token = '{}'", SHOPIFY_PRIVATE_APP_TOKEN),
+    );
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "shopify-private-app-token"), "Should detect Shopify private app token");
+    assert!(
+        should_detect(&output, "shopify-private-app-token"),
+        "Should detect Shopify private app token"
+    );
 }
 
 #[test]
 fn test_shopify_shared_secret_detection() {
     let dir = TestDir::new("shopify-shared");
-    dir.write_file("webhook.js", &format!("const secret = '{}';", SHOPIFY_SHARED_SECRET));
+    dir.write_file(
+        "webhook.js",
+        &format!("const secret = '{}';", SHOPIFY_SHARED_SECRET),
+    );
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "shopify-shared-secret"), "Should detect Shopify shared secret");
+    assert!(
+        should_detect(&output, "shopify-shared-secret"),
+        "Should detect Shopify shared secret"
+    );
 }
 
 // --- Databricks Tests ---
@@ -1633,7 +2088,10 @@ fn test_databricks_pat_detection() {
     dir.write_file(".databrickscfg", &format!("token = {}", DATABRICKS_PAT));
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "databricks-pat"), "Should detect Databricks PAT");
+    assert!(
+        should_detect(&output, "databricks-pat"),
+        "Should detect Databricks PAT"
+    );
 }
 
 // --- Square Payment Tests ---
@@ -1641,19 +2099,31 @@ fn test_databricks_pat_detection() {
 #[test]
 fn test_square_access_token_detection() {
     let dir = TestDir::new("square-access");
-    dir.write_file("payment.py", &format!("SQUARE_TOKEN = '{}'", SQUARE_ACCESS_TOKEN));
+    dir.write_file(
+        "payment.py",
+        &format!("SQUARE_TOKEN = '{}'", SQUARE_ACCESS_TOKEN),
+    );
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "square-access-token"), "Should detect Square access token");
+    assert!(
+        should_detect(&output, "square-access-token"),
+        "Should detect Square access token"
+    );
 }
 
 #[test]
 fn test_square_sandbox_token_detection() {
     let dir = TestDir::new("square-sandbox");
-    dir.write_file("test_payment.py", &format!("SANDBOX_TOKEN = '{}'", SQUARE_SANDBOX_TOKEN));
+    dir.write_file(
+        "test_payment.py",
+        &format!("SANDBOX_TOKEN = '{}'", SQUARE_SANDBOX_TOKEN),
+    );
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "square-access-token-sandbox"), "Should detect Square sandbox token");
+    assert!(
+        should_detect(&output, "square-access-token-sandbox"),
+        "Should detect Square sandbox token"
+    );
 }
 
 // --- PlanetScale Tests ---
@@ -1661,10 +2131,16 @@ fn test_square_sandbox_token_detection() {
 #[test]
 fn test_planetscale_password_detection() {
     let dir = TestDir::new("planetscale-pw");
-    dir.write_file(".env", &format!("DATABASE_PASSWORD={}", PLANETSCALE_PASSWORD));
+    dir.write_file(
+        ".env",
+        &format!("DATABASE_PASSWORD={}", PLANETSCALE_PASSWORD),
+    );
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "planetscale-password"), "Should detect PlanetScale password");
+    assert!(
+        should_detect(&output, "planetscale-password"),
+        "Should detect PlanetScale password"
+    );
 }
 
 #[test]
@@ -1673,7 +2149,10 @@ fn test_planetscale_token_detection() {
     dir.write_file("db_config.py", &format!("token = '{}'", PLANETSCALE_TOKEN));
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "planetscale-token"), "Should detect PlanetScale OAuth token");
+    assert!(
+        should_detect(&output, "planetscale-token"),
+        "Should detect PlanetScale OAuth token"
+    );
 }
 
 // --- Linear Tests ---
@@ -1684,7 +2163,10 @@ fn test_linear_api_key_detection() {
     dir.write_file(".env", &format!("LINEAR_API_KEY={}", LINEAR_API_KEY));
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "linear-api-key"), "Should detect Linear API key");
+    assert!(
+        should_detect(&output, "linear-api-key"),
+        "Should detect Linear API key"
+    );
 }
 
 // --- Figma Tests ---
@@ -1692,10 +2174,16 @@ fn test_linear_api_key_detection() {
 #[test]
 fn test_figma_pat_detection() {
     let dir = TestDir::new("figma-pat");
-    dir.write_file("design_sync.js", &format!("const FIGMA_TOKEN = '{}';", FIGMA_PAT));
+    dir.write_file(
+        "design_sync.js",
+        &format!("const FIGMA_TOKEN = '{}';", FIGMA_PAT),
+    );
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "figma-pat"), "Should detect Figma PAT");
+    assert!(
+        should_detect(&output, "figma-pat"),
+        "Should detect Figma PAT"
+    );
 }
 
 // --- DigitalOcean Tests ---
@@ -1703,10 +2191,16 @@ fn test_figma_pat_detection() {
 #[test]
 fn test_digitalocean_token_detection() {
     let dir = TestDir::new("do-token");
-    dir.write_file("deploy.sh", &format!("export DO_TOKEN={}", DIGITALOCEAN_TOKEN));
+    dir.write_file(
+        "deploy.sh",
+        &format!("export DO_TOKEN={}", DIGITALOCEAN_TOKEN),
+    );
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "digitalocean-token"), "Should detect DigitalOcean API token");
+    assert!(
+        should_detect(&output, "digitalocean-token"),
+        "Should detect DigitalOcean API token"
+    );
 }
 
 #[test]
@@ -1715,16 +2209,25 @@ fn test_digitalocean_pat_detection() {
     dir.write_file(".env", &format!("DIGITALOCEAN_TOKEN={}", DIGITALOCEAN_PAT));
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "digitalocean-pat"), "Should detect DigitalOcean PAT");
+    assert!(
+        should_detect(&output, "digitalocean-pat"),
+        "Should detect DigitalOcean PAT"
+    );
 }
 
 #[test]
 fn test_digitalocean_refresh_token_detection() {
     let dir = TestDir::new("do-refresh");
-    dir.write_file("oauth_config.py", &format!("refresh_token = '{}'", DIGITALOCEAN_REFRESH));
+    dir.write_file(
+        "oauth_config.py",
+        &format!("refresh_token = '{}'", DIGITALOCEAN_REFRESH),
+    );
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "digitalocean-refresh-token"), "Should detect DigitalOcean refresh token");
+    assert!(
+        should_detect(&output, "digitalocean-refresh-token"),
+        "Should detect DigitalOcean refresh token"
+    );
 }
 
 // --- Doppler Tests ---
@@ -1735,7 +2238,10 @@ fn test_doppler_token_detection() {
     dir.write_file(".doppler.yaml", &format!("token: {}", DOPPLER_TOKEN));
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "doppler-api-token"), "Should detect Doppler API token");
+    assert!(
+        should_detect(&output, "doppler-api-token"),
+        "Should detect Doppler API token"
+    );
 }
 
 // --- New Relic Tests ---
@@ -1743,10 +2249,16 @@ fn test_doppler_token_detection() {
 #[test]
 fn test_newrelic_api_key_detection() {
     let dir = TestDir::new("newrelic-api");
-    dir.write_file("monitoring.py", &format!("NEW_RELIC_KEY = '{}'", NEWRELIC_API_KEY));
+    dir.write_file(
+        "monitoring.py",
+        &format!("NEW_RELIC_KEY = '{}'", NEWRELIC_API_KEY),
+    );
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "newrelic-api-key"), "Should detect New Relic API key");
+    assert!(
+        should_detect(&output, "newrelic-api-key"),
+        "Should detect New Relic API key"
+    );
 }
 
 // --- Mapbox Tests ---
@@ -1754,10 +2266,16 @@ fn test_newrelic_api_key_detection() {
 #[test]
 fn test_mapbox_access_token_detection() {
     let dir = TestDir::new("mapbox-access");
-    dir.write_file("map_config.js", &format!("mapboxgl.accessToken = '{}';", MAPBOX_ACCESS_TOKEN));
+    dir.write_file(
+        "map_config.js",
+        &format!("mapboxgl.accessToken = '{}';", MAPBOX_ACCESS_TOKEN),
+    );
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "mapbox-access-token"), "Should detect Mapbox access token");
+    assert!(
+        should_detect(&output, "mapbox-access-token"),
+        "Should detect Mapbox access token"
+    );
 }
 
 #[test]
@@ -1766,7 +2284,10 @@ fn test_mapbox_secret_token_detection() {
     dir.write_file(".env", &format!("MAPBOX_SECRET={}", MAPBOX_SECRET_TOKEN));
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "mapbox-secret-token"), "Should detect Mapbox secret token");
+    assert!(
+        should_detect(&output, "mapbox-secret-token"),
+        "Should detect Mapbox secret token"
+    );
 }
 
 // --- Age Encryption Tests ---
@@ -1777,7 +2298,10 @@ fn test_age_secret_key_detection() {
     dir.write_file("keys.txt", &format!("{}", AGE_SECRET_KEY));
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "age-secret-key"), "Should detect Age secret key");
+    assert!(
+        should_detect(&output, "age-secret-key"),
+        "Should detect Age secret key"
+    );
 }
 
 // --- Notion Tests ---
@@ -1785,10 +2309,16 @@ fn test_age_secret_key_detection() {
 #[test]
 fn test_notion_integration_token_detection() {
     let dir = TestDir::new("notion-token");
-    dir.write_file("notion_sync.py", &format!("NOTION_TOKEN = '{}'", NOTION_TOKEN));
+    dir.write_file(
+        "notion_sync.py",
+        &format!("NOTION_TOKEN = '{}'", NOTION_TOKEN),
+    );
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "notion-integration-token"), "Should detect Notion integration token");
+    assert!(
+        should_detect(&output, "notion-integration-token"),
+        "Should detect Notion integration token"
+    );
 }
 
 // --- Discord MTI Variant Tests ---
@@ -1799,7 +2329,10 @@ fn test_discord_bot_token_mti_detection() {
     dir.write_file("bot.py", &format!("TOKEN = '{}'", DISCORD_BOT_TOKEN_MTI));
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(should_detect(&output, "discord-bot-token-mti"), "Should detect Discord bot token (MTI variant)");
+    assert!(
+        should_detect(&output, "discord-bot-token-mti"),
+        "Should detect Discord bot token (MTI variant)"
+    );
 }
 
 // --- False Positive Tests for Bug Bounty Targets ---
@@ -1807,26 +2340,38 @@ fn test_discord_bot_token_mti_detection() {
 #[test]
 fn test_shopify_false_positives() {
     let dir = TestDir::new("shopify-false-positive");
-    dir.write_file("test.py", r#"
+    dir.write_file(
+        "test.py",
+        r#"
 # These should NOT trigger
 short_token = "shpat_abc123"  # Too short
 fake_prefix = "shopify_token_abc123"  # Wrong prefix
 not_token = "the shpat_ prefix is used"  # Context, not token
-"#);
+"#,
+    );
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(!should_detect(&output, "shopify-access-token"), "Should not detect invalid Shopify tokens");
+    assert!(
+        !should_detect(&output, "shopify-access-token"),
+        "Should not detect invalid Shopify tokens"
+    );
 }
 
 #[test]
 fn test_planetscale_false_positives() {
     let dir = TestDir::new("planetscale-false-positive");
-    dir.write_file("test.py", r#"
+    dir.write_file(
+        "test.py",
+        r#"
 # These should NOT trigger
 short_pw = "pscale_pw_abc"  # Too short
 fake = "planetscale_password"  # Wrong format
-"#);
+"#,
+    );
 
     let (output, _) = run_scan(dir.path_str());
-    assert!(!should_detect(&output, "planetscale-password"), "Should not detect invalid PlanetScale tokens");
+    assert!(
+        !should_detect(&output, "planetscale-password"),
+        "Should not detect invalid PlanetScale tokens"
+    );
 }

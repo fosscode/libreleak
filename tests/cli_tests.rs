@@ -212,7 +212,10 @@ fn test_json_format_empty() {
     let output = cargo_run(&[dir.path_str(), "-f", "json"]);
     let out = stdout(&output);
 
-    assert!(out.contains("\"findings\": ["), "Should have empty findings array");
+    assert!(
+        out.contains("\"findings\": ["),
+        "Should have empty findings array"
+    );
 }
 
 #[test]
@@ -263,7 +266,10 @@ fn test_context_default() {
     let out = stdout(&output);
 
     // Should show context lines
-    assert!(out.contains("Context:") || out.contains("|"), "Should show context");
+    assert!(
+        out.contains("Context:") || out.contains("|"),
+        "Should show context"
+    );
 }
 
 #[test]
@@ -287,10 +293,7 @@ fn test_context_lines_flag() {
     let dir = TestDir::new("context-lines");
     dir.write_file(
         "config.py",
-        &format!(
-            "1\n2\n3\n4\n5\nKEY = '{}'\n7\n8\n9\n10\n11",
-            OPENAI_API_KEY
-        ),
+        &format!("1\n2\n3\n4\n5\nKEY = '{}'\n7\n8\n9\n10\n11", OPENAI_API_KEY),
     );
 
     let output = cargo_run(&[dir.path_str(), "-C", "5"]);
@@ -333,7 +336,10 @@ fn test_only_filter_multiple_rules() {
     let output = cargo_run(&[dir.path_str(), "--only", "github-pat,aws-access-key-id"]);
     let out = stdout(&output);
 
-    assert!(out.contains("github") || out.contains("aws"), "Should find filtered rules");
+    assert!(
+        out.contains("github") || out.contains("aws"),
+        "Should find filtered rules"
+    );
 }
 
 #[test]
@@ -347,7 +353,10 @@ fn test_exclude_filter_single_rule() {
     let output = cargo_run(&[dir.path_str(), "--exclude", "openai-api-key"]);
     let out = stdout(&output);
 
-    assert!(!out.contains("openai-api-key"), "Should not find excluded rule");
+    assert!(
+        !out.contains("openai-api-key"),
+        "Should not find excluded rule"
+    );
 }
 
 #[test]
@@ -364,8 +373,14 @@ fn test_exclude_filter_multiple_rules() {
     let output = cargo_run(&[dir.path_str(), "--exclude", "openai-api-key,github-pat"]);
     let out = stdout(&output);
 
-    assert!(!out.contains("openai-api-key"), "Should not find excluded OpenAI");
-    assert!(!out.contains("github-pat"), "Should not find excluded GitHub");
+    assert!(
+        !out.contains("openai-api-key"),
+        "Should not find excluded OpenAI"
+    );
+    assert!(
+        !out.contains("github-pat"),
+        "Should not find excluded GitHub"
+    );
 }
 
 #[test]
@@ -377,7 +392,10 @@ fn test_list_rules() {
     assert!(out.contains("aws-access-key-id"), "Should list AWS rule");
     assert!(out.contains("github-pat"), "Should list GitHub rule");
     assert!(out.contains("openai-api-key"), "Should list OpenAI rule");
-    assert!(out.contains("anthropic-api-key"), "Should list Anthropic rule");
+    assert!(
+        out.contains("anthropic-api-key"),
+        "Should list Anthropic rule"
+    );
     assert!(out.contains("ollama-endpoint"), "Should list Ollama rule");
 }
 
@@ -442,7 +460,11 @@ fn test_path_with_spaces() {
     let output = cargo_run(&[dir.path_str()]);
 
     // Should handle spaces in path
-    assert!(output.status.success() || output.status.code() == Some(0) || output.status.code() == Some(1));
+    assert!(
+        output.status.success()
+            || output.status.code() == Some(0)
+            || output.status.code() == Some(1)
+    );
 }
 
 #[test]
@@ -564,5 +586,8 @@ fn test_empty_context_errors() {
 fn test_invalid_context_number() {
     let output = cargo_run(&["--context", "notanumber"]);
 
-    assert!(!output.status.success(), "Invalid context number should error");
+    assert!(
+        !output.status.success(),
+        "Invalid context number should error"
+    );
 }

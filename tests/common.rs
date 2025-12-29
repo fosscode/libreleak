@@ -17,7 +17,8 @@ pub struct TestDir {
 
 impl TestDir {
     pub fn new(name: &str) -> Self {
-        let path = std::env::temp_dir().join(format!("libreleak-test-{}-{}", name, std::process::id()));
+        let path =
+            std::env::temp_dir().join(format!("libreleak-test-{}-{}", name, std::process::id()));
         if path.exists() {
             fs::remove_dir_all(&path).unwrap();
         }
@@ -190,7 +191,8 @@ pub mod fake_secrets {
     pub const GITHUB_OAUTH: &str = "gho_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8";
     pub const GITHUB_APP: &str = "ghu_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8";
     pub const GITHUB_REFRESH: &str = "ghr_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8";
-    pub const GITHUB_FINE_GRAINED: &str = "github_pat_11AAAAAA_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2";
+    pub const GITHUB_FINE_GRAINED: &str =
+        "github_pat_11AAAAAA_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2";
 
     // GitLab
     pub const GITLAB_PAT: &str = "glpat-a1b2c3d4e5f6g7h8i9j0";
@@ -199,7 +201,8 @@ pub mod fake_secrets {
 
     // OpenAI
     pub const OPENAI_API_KEY: &str = "sk-a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4";
-    pub const OPENAI_PROJECT_KEY: &str = "sk-proj-a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6";
+    pub const OPENAI_PROJECT_KEY: &str =
+        "sk-proj-a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6";
 
     // Anthropic / Claude
     pub const ANTHROPIC_API_KEY: &str = "sk-ant-api03-a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8";
@@ -209,7 +212,8 @@ pub mod fake_secrets {
     pub const GEMINI_API_KEY: &str = "AIzaSyDa1B2c3D4e5F6g7H8i9J0k1L2m3N4o5P6q";
 
     // OpenRouter
-    pub const OPENROUTER_API_KEY: &str = "sk-or-v1-a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0";
+    pub const OPENROUTER_API_KEY: &str =
+        "sk-or-v1-a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0";
 
     // xAI / Grok
     pub const XAI_API_KEY: &str = "xai-a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0";
@@ -220,58 +224,89 @@ pub mod fake_secrets {
     // Emerging AI Providers (2025-2026)
     pub const CLAUDE_3_API_KEY: &str = "sk-ant-api03-a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2g3h4i5j6k7l8m9n0o1p2q3r4s5t6u7v8w9x0y1z2a3b4c5d6e7f8g9h0i1j2k3l4m5n6o7p8q9r0s1t2u3v4w5x6y7z8a9b0c1d2e3f4g5h6i7j8k9l0m1n2o3p4q5r6s7t8u9v0w1x2y3z4a5b6c7d8e9f0g1h2i3j4k5l6m7n8o9p0q1r2s3t4u5v6w7x8y9z0a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6";
     pub const GROK_2_API_KEY: &str = "xai-grok2-a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2g3h4i5j6k7l8m9n0";
-    pub const GPT_5_API_KEY: &str = "sk-gpt5-a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2g3h4i5j6k7l8m9n0";
-    pub const GEMINI_ULTRA_API_KEY: &str = "AIzaSyDa1B2c3D4e5F6g7H8i9J0k1L2m3N4o5P6q7R8s9T0u1V2w3X4y5Z6";
-    pub const MIDJOURNEY_V6_API_KEY: &str = "mj-a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2";
+    pub const GPT_5_API_KEY: &str =
+        "sk-gpt5-a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2g3h4i5j6k7l8m9n0";
+    pub const GEMINI_ULTRA_API_KEY: &str =
+        "AIzaSyDa1B2c3D4e5F6g7H8i9J0k1L2m3N4o5P6q7R8s9T0u1V2w3X4y5Z6";
+    pub const MIDJOURNEY_V6_API_KEY: &str =
+        "mj-a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2";
     pub const STABILITY_AI_V3_KEY: &str = "sk-stability-a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2g3h4i5j6k7l8m9n0";
 
     // Quantum-Resistant Cryptography (2025-2026)
-    pub const PQ_KYBER_KEY: &str = "kyber-a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2g3h4i5j6k7l8m9n0";
+    pub const PQ_KYBER_KEY: &str =
+        "kyber-a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2g3h4i5j6k7l8m9n0";
     pub const PQ_DILITHIUM_KEY: &str = "dilithium-a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2g3h4i5j6k7l8m9n0";
-    pub const PQ_FALCON_KEY: &str = "falcon-a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2g3h4i5j6k7l8m9n0";
-    pub const PQ_SPHINCS_KEY: &str = "sphincs-a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2g3h4i5j6k7l8m9n0";
-    pub const PQ_BIKE_KEY: &str = "bike-a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2g3h4i5j6k7l8m9n0";
-    pub const PQ_HQC_KEY: &str = "hqc-a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2g3h4i5j6k7l8m9n0";
-    pub const PQ_NEWHOPE_KEY: &str = "newhope-a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2g3h4i5j6k7l8m9n0";
-    pub const PQ_FRODO_KEY: &str = "frodo-a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2g3h4i5j6k7l8m9n0";
+    pub const PQ_FALCON_KEY: &str =
+        "falcon-a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2g3h4i5j6k7l8m9n0";
+    pub const PQ_SPHINCS_KEY: &str =
+        "sphincs-a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2g3h4i5j6k7l8m9n0";
+    pub const PQ_BIKE_KEY: &str =
+        "bike-a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2g3h4i5j6k7l8m9n0";
+    pub const PQ_HQC_KEY: &str =
+        "hqc-a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2g3h4i5j6k7l8m9n0";
+    pub const PQ_NEWHOPE_KEY: &str =
+        "newhope-a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2g3h4i5j6k7l8m9n0";
+    pub const PQ_FRODO_KEY: &str =
+        "frodo-a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2g3h4i5j6k7l8m9n0";
     pub const QKD_KEY: &str = "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2g3h4i5j6k7l8m9n0o1p2q3r4s5t6u7v8w9x0y1z2a3b4c5d6e7f8g9h0i1j2k3l4m5n6o7p8q9r0s1t2u3v4w5x6y7z8a9b0c1d2e3f4g5h6i7j8k9l0m1n2o3p4q5r6s7t8u9v0w1x2y3z4a5b6c7d8e9f0g1h2i3j4k5l6m7n8o9p0q1r2s3t4u5v6w7x8y9z0a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6";
 
     // AI Model Weights & Cloud Storage (2025-2026)
-    pub const HF_MODEL_TOKEN: &str = "hf_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2";
-    pub const REPLICATE_MODEL_TOKEN: &str = "r8_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2";
-    pub const OPENAI_MODEL_TOKEN: &str = "sk-model-a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2";
+    pub const HF_MODEL_TOKEN: &str =
+        "hf_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2";
+    pub const REPLICATE_MODEL_TOKEN: &str =
+        "r8_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2";
+    pub const OPENAI_MODEL_TOKEN: &str =
+        "sk-model-a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2";
     pub const MLFLOW_TRACKING_URI: &str = "http://mlflow.example.com:5000";
-    pub const WANDB_API_KEY: &str = "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2";
-    pub const COMET_API_KEY: &str = "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2";
+    pub const WANDB_API_KEY: &str =
+        "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2";
+    pub const COMET_API_KEY: &str =
+        "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2";
     pub const NEPTUNE_API_TOKEN: &str = "eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiJhMWJjZGUyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWYwMTIzNDU2Nzg5In0=";
     pub const AWS_MODEL_BUCKET: &str = "s3://ai-models-bucket/models/";
     pub const GCP_MODEL_BUCKET: &str = "gs://ai-models-bucket/models/";
     pub const AZURE_MODEL_BLOB: &str = "https://aimodels.blob.core.windows.net/models/";
-    pub const DVC_REMOTE_TOKEN: &str = "dvc_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2";
+    pub const DVC_REMOTE_TOKEN: &str =
+        "dvc_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2";
 
     // Federated Identity Tokens (2025-2026)
-    pub const OAUTH21_ACCESS_TOKEN: &str = "oauth21_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2";
+    pub const OAUTH21_ACCESS_TOKEN: &str =
+        "oauth21_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2";
     pub const JWT_ACCESS_TOKEN: &str = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c";
-    pub const JWT_REFRESH_TOKEN: &str = "refresh_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2";
+    pub const JWT_REFRESH_TOKEN: &str =
+        "refresh_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2";
     pub const SAML_ASSERTION: &str = "PHNhbWw6QXNzZXJ0aW9uIHhtbG5zOnNhbWw9InVybjpvYXNpczpuYW1lczp0YzpTQU1MOjIuMDphc3NlcnRpb24iIElEPSJfYTFiMmMzZDRlNWY2ZzdoOGk5ajBrMWwybTNuNG81cDZxN3I4czl0MHUxI";
-    pub const OIDC_ID_TOKEN: &str = "oidc_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2";
+    pub const OIDC_ID_TOKEN: &str =
+        "oidc_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2";
     pub const GCP_SA_TOKEN: &str = "ya29.a0AfH6SMA1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2g3h4i5j6k7l8m9n0o1p2q3r4s5t6u7v8w9x0y1z2a3b4c5d6e7f8g9h0i1j2k3l4m5n6o7p8q9r0s1t2u3v4w5x6y7z8a9b0c1d2e3f4g5h6i7j8k9l0m1n2o3p4q5r6s7t8u9v0w1x2y3z4a5b6c7d8e9f0g1h2i3j4k5l6m7n8o9p0q1r2s3t4u5v6w7x8y9z0a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6";
-    pub const AWS_SA_TOKEN: &str = "aws_sa_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2";
-    pub const FEDERATED_IDENTITY_TOKEN: &str = "fed_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2";
-    pub const WORKLOAD_IDENTITY_TOKEN: &str = "workload_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2";
+    pub const AWS_SA_TOKEN: &str =
+        "aws_sa_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2";
+    pub const FEDERATED_IDENTITY_TOKEN: &str =
+        "fed_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2";
+    pub const WORKLOAD_IDENTITY_TOKEN: &str =
+        "workload_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2";
 
     // Web3/Blockchain Keys (2025-2026)
-    pub const ETHEREUM_PRIVATE_KEY: &str = "0xa1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2g3h4i5j6k7l8m9n0";
+    pub const ETHEREUM_PRIVATE_KEY: &str =
+        "0xa1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2g3h4i5j6k7l8m9n0";
     pub const ETHEREUM_MNEMONIC: &str = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
     pub const SOLANA_PRIVATE_KEY: &str = "[174,47,154,16,202,193,206,113,199,190,53,133,169,175,31,56,222,53,138,189,224,216,117,173,10,149,53,45,73,46,49,128]";
-    pub const POLYGON_PRIVATE_KEY: &str = "0xb1c2d3e4f5g6h7i8j9k0l1m2n3o4p5q6r7s8t9u0v1w2x3y4z5a6b7c8d9e0f1g2h3i4j5k6l7m8n9";
-    pub const AVALANCHE_PRIVATE_KEY: &str = "0xc1d2e3f4g5h6i7j8k9l0m1n2o3p4q5r6s7t8u9v0w1x2y3z4a5b6c7d8e9f0g1h2i3j4k5l6m7n8o9";
-    pub const BSC_PRIVATE_KEY: &str = "0xd1e2f3g4h5i6j7k8l9m0n1o2p3q4r5s6t7u8v9w0x1y2z3a4b5c6d7e8f9g0h1i2j3k4l5m6n7o8p9";
-    pub const ARBITRUM_PRIVATE_KEY: &str = "0xe1f2g3h4i5j6k7l8m9n0o1p2q3r4s5t6u7v8w9x0y1z2a3b4c5d6e7f8g9h0i1j2k3l4m5n6o7p8q9";
-    pub const OPTIMISM_PRIVATE_KEY: &str = "0xf1g2h3i4j5k6l7m8n9o0p1q2r3s4t5u6v7w8x9y0z1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r9";
-    pub const WALLET_CONNECT_URI: &str = "wc:a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2g3h4i5j6k7l8m9n0";
-    pub const METAMASK_SEED: &str = "witch collapse practice feed shame open despair creek road again ice least";
-    pub const COINBASE_SEED: &str = "maximum attend light bulb genuine all fashion blind border girl insane acoustic";
+    pub const POLYGON_PRIVATE_KEY: &str =
+        "0xb1c2d3e4f5g6h7i8j9k0l1m2n3o4p5q6r7s8t9u0v1w2x3y4z5a6b7c8d9e0f1g2h3i4j5k6l7m8n9";
+    pub const AVALANCHE_PRIVATE_KEY: &str =
+        "0xc1d2e3f4g5h6i7j8k9l0m1n2o3p4q5r6s7t8u9v0w1x2y3z4a5b6c7d8e9f0g1h2i3j4k5l6m7n8o9";
+    pub const BSC_PRIVATE_KEY: &str =
+        "0xd1e2f3g4h5i6j7k8l9m0n1o2p3q4r5s6t7u8v9w0x1y2z3a4b5c6d7e8f9g0h1i2j3k4l5m6n7o8p9";
+    pub const ARBITRUM_PRIVATE_KEY: &str =
+        "0xe1f2g3h4i5j6k7l8m9n0o1p2q3r4s5t6u7v8w9x0y1z2a3b4c5d6e7f8g9h0i1j2k3l4m5n6o7p8q9";
+    pub const OPTIMISM_PRIVATE_KEY: &str =
+        "0xf1g2h3i4j5k6l7m8n9o0p1q2r3s4t5u6v7w8x9y0z1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r9";
+    pub const WALLET_CONNECT_URI: &str =
+        "wc:a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2g3h4i5j6k7l8m9n0";
+    pub const METAMASK_SEED: &str =
+        "witch collapse practice feed shame open despair creek road again ice least";
+    pub const COINBASE_SEED: &str =
+        "maximum attend light bulb genuine all fashion blind border girl insane acoustic";
 
     // Perplexity
     pub const PERPLEXITY_API_KEY: &str = "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";
@@ -301,7 +336,8 @@ pub mod fake_secrets {
     pub const TWILIO_API_KEY: &str = "SKa1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6";
 
     // SendGrid
-    pub const SENDGRID_API_KEY: &str = "SG.a1b2c3d4e5f6g7h8i9j0.k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2g3";
+    pub const SENDGRID_API_KEY: &str =
+        "SG.a1b2c3d4e5f6g7h8i9j0.k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2g3";
 
     // npm
     pub const NPM_TOKEN: &str = "npm_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8";
@@ -337,13 +373,16 @@ MHQCAQEEIBYwFQXWFHCeBRWNJBZCUQKCAQEA0Z3VS5JJcds3xfn/EXAMPLEONLY
     pub const POSTGRES_URI: &str = "postgres://user:password123@localhost:5432/mydb";
     pub const POSTGRESQL_URI: &str = "postgresql://admin:secretpass@db.example.com:5432/production";
     pub const MYSQL_URI: &str = "mysql://root:hunter2@mysql.example.com:3306/app";
-    pub const MONGODB_URI: &str = "mongodb://admin:mongopass123@cluster0.example.mongodb.net:27017/mydb";
-    pub const MONGODB_SRV_URI: &str = "mongodb+srv://user:pass@cluster0.xxxxx.mongodb.net/myapp?retryWrites=true";
+    pub const MONGODB_URI: &str =
+        "mongodb://admin:mongopass123@cluster0.example.mongodb.net:27017/mydb";
+    pub const MONGODB_SRV_URI: &str =
+        "mongodb+srv://user:pass@cluster0.xxxxx.mongodb.net/myapp?retryWrites=true";
     pub const MONGODB_ATLAS: &str = "mongodb+srv://dbuser:dbpass@cluster0.abcde.mongodb.net";
     pub const REDIS_URI: &str = "redis://default:redispassword@redis.example.com:6379/0";
 
     // JDBC
-    pub const JDBC_POSTGRES: &str = "jdbc:postgresql://localhost:5432/mydb?user=admin&password=secret";
+    pub const JDBC_POSTGRES: &str =
+        "jdbc:postgresql://localhost:5432/mydb?user=admin&password=secret";
     pub const JDBC_MYSQL: &str = "jdbc:mysql://localhost:3306/mydb?user=root&password=hunter2";
 
     // Local AI Endpoints
@@ -382,9 +421,12 @@ MHQCAQEEIBYwFQXWFHCeBRWNJBZCUQKCAQEA0Z3VS5JJcds3xfn/EXAMPLEONLY
     pub const FIGMA_PAT: &str = "figd_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0";
 
     // DigitalOcean (tokens need to be 64+ chars total)
-    pub const DIGITALOCEAN_TOKEN: &str = "dop_v1_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0";
-    pub const DIGITALOCEAN_PAT: &str = "doo_v1_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0";
-    pub const DIGITALOCEAN_REFRESH: &str = "dor_v1_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0";
+    pub const DIGITALOCEAN_TOKEN: &str =
+        "dop_v1_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0";
+    pub const DIGITALOCEAN_PAT: &str =
+        "doo_v1_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0";
+    pub const DIGITALOCEAN_REFRESH: &str =
+        "dor_v1_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0";
 
     // Doppler
     pub const DOPPLER_TOKEN: &str = "dp.pt.a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8";
@@ -397,13 +439,15 @@ MHQCAQEEIBYwFQXWFHCeBRWNJBZCUQKCAQEA0Z3VS5JJcds3xfn/EXAMPLEONLY
     pub const MAPBOX_SECRET_TOKEN: &str = "sk.eyJhIjoiYTFiMmMzZDRlNWY2ZzdoOGk5ajBrMWwybTNuNG81cDZxN3I4czl0MHUxdjJ3M3g0eTUiLCJiIjoiY2xhMWIyYzNkNGU1ZjZnN2g4aTlqMGsxbDJtM240bzVwNnE3cjhzOXQwdTF2MncifQ.a1b2c3d4e5f6g7h8i9j0";
 
     // Age encryption
-    pub const AGE_SECRET_KEY: &str = "AGE-SECRET-KEY-1A2B3C4D5E6F7G8H9I0J1K2L3M4N5O6P7Q8R9S0T1U2V3W4X5Y6Z7";
+    pub const AGE_SECRET_KEY: &str =
+        "AGE-SECRET-KEY-1A2B3C4D5E6F7G8H9I0J1K2L3M4N5O6P7Q8R9S0T1U2V3W4X5Y6Z7";
 
     // Notion
     pub const NOTION_TOKEN: &str = "secret_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0";
 
     // Discord MTI variant (min 59 chars)
-    pub const DISCORD_BOT_TOKEN_MTI: &str = "MTI1234567890.a1b2c3.d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2";
+    pub const DISCORD_BOT_TOKEN_MTI: &str =
+        "MTI1234567890.a1b2c3.d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2";
 }
 
 // ============================================================================
@@ -772,7 +816,12 @@ pub mod edge_cases {
     /// Very long lines
     pub fn very_long_line() -> String {
         let padding = "x".repeat(10000);
-        format!("{}OPENAI_API_KEY={}{}", padding, super::fake_secrets::OPENAI_API_KEY, padding)
+        format!(
+            "{}OPENAI_API_KEY={}{}",
+            padding,
+            super::fake_secrets::OPENAI_API_KEY,
+            padding
+        )
     }
 
     /// Unicode in file
