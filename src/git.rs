@@ -42,7 +42,13 @@ pub fn list_tracked_files(repo_path: &str) -> Result<Vec<String>, Box<dyn std::e
 /// Scan git history for secrets
 pub fn scan_history(repo_path: &str) -> Result<Vec<String>, Box<dyn std::error::Error>> {
     let output = Command::new("git")
-        .args(["log", "--all", "--pretty=format:", "--name-only", "--diff-filter=A"])
+        .args([
+            "log",
+            "--all",
+            "--pretty=format:",
+            "--name-only",
+            "--diff-filter=A",
+        ])
         .current_dir(repo_path)
         .output()?;
 

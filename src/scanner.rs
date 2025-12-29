@@ -194,17 +194,14 @@ impl Scanner {
                 charset,
             } => self.detect_prefix(line, prefix, *min_len, *charset),
 
-            Detector::Contains { needle } => {
-                line.find(needle).map(|pos| (needle.to_string(), pos))
-            }
+            Detector::Contains { needle } => line.find(needle).map(|pos| (needle.to_string(), pos)),
 
-            Detector::KeyValue { keys, min_value_len } => {
-                self.detect_key_value(line, keys, *min_value_len)
-            }
+            Detector::KeyValue {
+                keys,
+                min_value_len,
+            } => self.detect_key_value(line, keys, *min_value_len),
 
-            Detector::Endpoint { keys, patterns } => {
-                self.detect_endpoint(line, keys, patterns)
-            }
+            Detector::Endpoint { keys, patterns } => self.detect_endpoint(line, keys, patterns),
         }
     }
 
@@ -380,7 +377,9 @@ impl Scanner {
                         inner.find('\'').map(|end| &inner[..end])
                     } else {
                         let end = value_start
-                            .find(|c: char| c.is_whitespace() || c == ',' || c == ';' || c == '}' || c == ']')
+                            .find(|c: char| {
+                                c.is_whitespace() || c == ',' || c == ';' || c == '}' || c == ']'
+                            })
                             .unwrap_or(value_start.len());
                         Some(&value_start[..end])
                     };
@@ -404,13 +403,23 @@ impl Scanner {
             if let Some(pos) = line.find(pattern) {
                 // Try to extract the full URL
                 let start = line[..pos]
-                    .rfind(|c: char| c.is_whitespace() || c == '"' || c == '\'' || c == '=' || c == ':')
+                    .rfind(|c: char| {
+                        c.is_whitespace() || c == '"' || c == '\'' || c == '=' || c == ':'
+                    })
                     .map(|i| i + 1)
                     .unwrap_or(0);
 
                 let remaining = &line[start..];
                 let end = remaining
-                    .find(|c: char| c.is_whitespace() || c == '"' || c == '\'' || c == ',' || c == ';' || c == '}' || c == ']')
+                    .find(|c: char| {
+                        c.is_whitespace()
+                            || c == '"'
+                            || c == '\''
+                            || c == ','
+                            || c == ';'
+                            || c == '}'
+                            || c == ']'
+                    })
                     .unwrap_or(remaining.len());
 
                 let url = &remaining[..end];
@@ -523,15 +532,55 @@ impl Scanner {
 
         matches!(
             ext.to_lowercase().as_str(),
-            "png" | "jpg" | "jpeg" | "gif" | "ico" | "bmp" | "webp" | "svg"
-                | "woff" | "woff2" | "ttf" | "eot" | "otf"
-                | "mp3" | "mp4" | "avi" | "mov" | "webm" | "ogg" | "wav"
-                | "zip" | "tar" | "gz" | "bz2" | "xz" | "7z" | "rar"
-                | "pdf" | "doc" | "docx" | "xls" | "xlsx" | "ppt" | "pptx"
-                | "exe" | "dll" | "so" | "dylib" | "o" | "a"
-                | "pyc" | "pyo" | "class" | "jar" | "war"
+            "png"
+                | "jpg"
+                | "jpeg"
+                | "gif"
+                | "ico"
+                | "bmp"
+                | "webp"
+                | "svg"
+                | "woff"
+                | "woff2"
+                | "ttf"
+                | "eot"
+                | "otf"
+                | "mp3"
+                | "mp4"
+                | "avi"
+                | "mov"
+                | "webm"
+                | "ogg"
+                | "wav"
+                | "zip"
+                | "tar"
+                | "gz"
+                | "bz2"
+                | "xz"
+                | "7z"
+                | "rar"
+                | "pdf"
+                | "doc"
+                | "docx"
+                | "xls"
+                | "xlsx"
+                | "ppt"
+                | "pptx"
+                | "exe"
+                | "dll"
+                | "so"
+                | "dylib"
+                | "o"
+                | "a"
+                | "pyc"
+                | "pyo"
+                | "class"
+                | "jar"
+                | "war"
                 | "wasm"
-                | "db" | "sqlite" | "sqlite3"
+                | "db"
+                | "sqlite"
+                | "sqlite3"
         )
     }
 
@@ -620,11 +669,11 @@ fn looks_like_code(value: &str) -> bool {
     if value.contains('.') && !value.starts_with("http") {
         // Allow known token formats that contain dots
         let known_dot_prefixes = [
-            "ya29.",  // Google OAuth
-            "MTI",    // Discord (MTI prefix tokens have dots)
-            "MTA",    // Discord (MTA prefix tokens have dots)
-            "xox",    // Slack tokens can have dots
-            "eyJ",    // JWT tokens (base64 encoded JSON)
+            "ya29.", // Google OAuth
+            "MTI",   // Discord (MTI prefix tokens have dots)
+            "MTA",   // Discord (MTA prefix tokens have dots)
+            "xox",   // Slack tokens can have dots
+            "eyJ",   // JWT tokens (base64 encoded JSON)
         ];
         if !known_dot_prefixes.iter().any(|p| value.starts_with(p)) {
             return true;
@@ -727,7 +776,9 @@ fn is_placeholder(value: &str) -> bool {
 
     // Common prefix + all x's pattern (like ghp_xxxxxxxx, sk-xxxxxxxx)
     // Check if value has a known prefix followed by mostly/all x's
-    let prefixes = ["ghp_", "gho_", "ghu_", "ghr_", "glpat-", "sk-", "sk_", "npm_", "pypi-", "hf_"];
+    let prefixes = [
+        "ghp_", "gho_", "ghu_", "ghr_", "glpat-", "sk-", "sk_", "npm_", "pypi-", "hf_",
+    ];
     for prefix in prefixes {
         if value.starts_with(prefix) {
             let suffix = &value[prefix.len()..];
@@ -741,9 +792,15 @@ fn is_placeholder(value: &str) -> bool {
     // e.g., postgres://user:password@localhost, mongodb://admin:secret@...
     // Only skip when using obvious placeholder passwords
     let placeholder_creds = [
-        ":password@", ":secret@", ":pass@", ":passwd@",
-        "://user:user@", "://admin:admin@", "://root:root@",
-        "@example.com", "@example.org",
+        ":password@",
+        ":secret@",
+        ":pass@",
+        ":passwd@",
+        "://user:user@",
+        "://admin:admin@",
+        "://root:root@",
+        "@example.com",
+        "@example.org",
     ];
     for cred in placeholder_creds {
         if value.contains(cred) {
@@ -757,7 +814,7 @@ fn is_placeholder(value: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-use crate::rules::{Charset, Detector, Rule};
+    use crate::rules::{Charset, Detector, Rule};
 
     // ========================================================================
     // REDACTION TESTS
@@ -1034,11 +1091,8 @@ use crate::rules::{Charset, Detector, Rule};
         let scanner = make_test_scanner();
         // Use non-localhost URL (real external endpoint)
         let line = "OLLAMA_HOST = 'http://my-gpu-server.example.com:11434'";
-        let result = scanner.detect_endpoint(
-            line,
-            &["OLLAMA_HOST", "OLLAMA_BASE_URL"],
-            &[":11434"],
-        );
+        let result =
+            scanner.detect_endpoint(line, &["OLLAMA_HOST", "OLLAMA_BASE_URL"], &[":11434"]);
 
         assert!(result.is_some());
     }
@@ -1048,11 +1102,7 @@ use crate::rules::{Charset, Detector, Rule};
         let scanner = make_test_scanner();
         // Use non-localhost URL (real external endpoint)
         let line = "base_url = 'http://ai-server.internal:11434/v1'";
-        let result = scanner.detect_endpoint(
-            line,
-            &["OLLAMA_HOST"],
-            &[":11434"],
-        );
+        let result = scanner.detect_endpoint(line, &["OLLAMA_HOST"], &[":11434"]);
 
         assert!(result.is_some());
     }
@@ -1062,11 +1112,7 @@ use crate::rules::{Charset, Detector, Rule};
         let scanner = make_test_scanner();
         // Use non-localhost URL (real external endpoint)
         let line = "LMSTUDIO_URL=http://workstation.local:1234/v1";
-        let result = scanner.detect_endpoint(
-            line,
-            &["LMSTUDIO_URL"],
-            &[":1234"],
-        );
+        let result = scanner.detect_endpoint(line, &["LMSTUDIO_URL"], &[":1234"]);
 
         assert!(result.is_some());
     }
@@ -1076,11 +1122,7 @@ use crate::rules::{Charset, Detector, Rule};
         let scanner = make_test_scanner();
         // localhost URLs should be skipped (not real leaked endpoints)
         let line = "OLLAMA_HOST = 'http://localhost:11434'";
-        let result = scanner.detect_endpoint(
-            line,
-            &["OLLAMA_HOST"],
-            &[":11434"],
-        );
+        let result = scanner.detect_endpoint(line, &["OLLAMA_HOST"], &[":11434"]);
 
         assert!(result.is_none(), "Should skip localhost URLs");
     }
@@ -1090,11 +1132,7 @@ use crate::rules::{Charset, Detector, Rule};
         let scanner = make_test_scanner();
         // 127.0.0.1 URLs should be skipped
         let line = "API_URL=http://127.0.0.1:8080/api";
-        let result = scanner.detect_endpoint(
-            line,
-            &["API_URL"],
-            &[":8080"],
-        );
+        let result = scanner.detect_endpoint(line, &["API_URL"], &[":8080"]);
 
         assert!(result.is_none(), "Should skip 127.0.0.1 URLs");
     }
@@ -1135,7 +1173,10 @@ use crate::rules::{Charset, Detector, Rule};
     fn test_should_not_skip_env_file() {
         let scanner = make_test_scanner();
         let path = Path::new("/project/.env");
-        assert!(!scanner.should_skip(path), ".env files should NOT be skipped");
+        assert!(
+            !scanner.should_skip(path),
+            ".env files should NOT be skipped"
+        );
     }
 
     // ========================================================================
@@ -1530,7 +1571,10 @@ use crate::rules::{Charset, Detector, Rule};
         // Should NOT match "bot_token" when searching for "token" key
         let line = format!("bot_token = '{}'", FAKE_SECRET);
         let result = scanner.detect_key_value(&line, &["token"], 20);
-        assert!(result.is_none(), "Should not match token when prefixed with bot_");
+        assert!(
+            result.is_none(),
+            "Should not match token when prefixed with bot_"
+        );
     }
 
     #[test]
@@ -1539,7 +1583,10 @@ use crate::rules::{Charset, Detector, Rule};
         // Should NOT match "password_hash" when searching for "password" key
         let line = format!("password_hash = '{}'", FAKE_SECRET);
         let result = scanner.detect_key_value(&line, &["password"], 20);
-        assert!(result.is_none(), "Should not match password when followed by _hash");
+        assert!(
+            result.is_none(),
+            "Should not match password when followed by _hash"
+        );
     }
 
     #[test]
@@ -1566,7 +1613,10 @@ use crate::rules::{Charset, Detector, Rule};
         // SHOULD match "token" when preceded by special chars (YAML, env files)
         let line = format!("  token: '{}'", FAKE_SECRET);
         let result = scanner.detect_key_value(&line, &["token"], 20);
-        assert!(result.is_some(), "Should match token when preceded by whitespace");
+        assert!(
+            result.is_some(),
+            "Should match token when preceded by whitespace"
+        );
 
         // Also test with underscore prefix in the KEY list itself
         let line2 = format!("auth_token = '{}'", FAKE_SECRET);

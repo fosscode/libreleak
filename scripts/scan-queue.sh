@@ -19,6 +19,7 @@ BATCH_SIZE="${1:-50}"
 SCAN_TIMEOUT=120
 CONTINUOUS=false
 MIN_PRIORITY=0
+VERIFY_SECRETS=true  # Verify secrets against provider APIs
 
 # Cross-platform timeout function
 run_with_timeout() {
@@ -64,6 +65,14 @@ parse_args() {
             --timeout|-t)
                 SCAN_TIMEOUT="$2"
                 shift 2
+                ;;
+            --no-verify)
+                VERIFY_SECRETS=false
+                shift
+                ;;
+            --verify)
+                VERIFY_SECRETS=true
+                shift
                 ;;
             *)
                 if [[ "$1" =~ ^[0-9]+$ ]]; then
@@ -163,6 +172,9 @@ store_finding() {
     local line_number="$6"
     local secret_preview="$7"
     local context="$8"
+    local verified="${9:-0}"
+    local verification_status="${10:-unknown}"
+    local verification_message="${11:-}"
 
     # Generate a hash for deduplication (simplified)
     local secret_hash=$(echo -n "$rule_id$file_path$line_number$secret_preview" | shasum -a 256 | cut -d' ' -f1)
@@ -172,16 +184,80 @@ store_finding() {
     secret_preview=$(echo "$secret_preview" | sed "s/'/''/g")
     context=$(echo "$context" | sed "s/'/''/g")
     rule_name=$(echo "$rule_name" | sed "s/'/''/g")
+    verification_message=$(echo "$verification_message" | sed "s/'/''/g")
 
     sqlite3 "$DB_PATH" "
         INSERT OR IGNORE INTO findings
-            (repo_id, scan_id, rule_id, rule_name, file_path, line_number, secret_preview, secret_hash, context)
+            (repo_id, scan_id, rule_id, rule_name, file_path, line_number, secret_preview, secret_hash, context, verified, verification_status, verification_message)
         VALUES
-            ($repo_id, $scan_id, '$rule_id', '$rule_name', '$file_path', $line_number, '$secret_preview', '$secret_hash', '$context');
+            ($repo_id, $scan_id, '$rule_id', '$rule_name', '$file_path', $line_number, '$secret_preview', '$secret_hash', '$context', $verified, '$verification_status', '$verification_message');
     "
 }
 
-# Parse scanner output and store findings
+# Parse scanner JSON output and store findings
+parse_and_store_findings_json() {
+    local repo_id="$1"
+    local scan_id="$2"
+    local output="$3"
+
+    local count=0
+
+    # Parse JSON output using simple grep/sed (no jq dependency)
+    # Format: {"findings": [{"rule_id": "...", "rule_name": "...", ...}], ...}
+
+    # Check if output is valid JSON with findings
+    if ! echo "$output" | grep -q '"findings"'; then
+        echo "0"
+        return
+    fi
+
+    # Extract each finding block
+    # This is a simplified parser - for production, use jq if available
+    while IFS= read -r finding_json; do
+        if [ -z "$finding_json" ]; then continue; fi
+
+        # Extract fields from JSON
+        local rule_id=$(echo "$finding_json" | grep -o '"rule_id"[[:space:]]*:[[:space:]]*"[^"]*"' | sed 's/"rule_id"[[:space:]]*:[[:space:]]*"//;s/"$//')
+        local rule_name=$(echo "$finding_json" | grep -o '"rule_name"[[:space:]]*:[[:space:]]*"[^"]*"' | sed 's/"rule_name"[[:space:]]*:[[:space:]]*"//;s/"$//')
+        local file_path=$(echo "$finding_json" | grep -o '"file"[[:space:]]*:[[:space:]]*"[^"]*"' | sed 's/"file"[[:space:]]*:[[:space:]]*"//;s/"$//')
+        local line_number=$(echo "$finding_json" | grep -o '"line"[[:space:]]*:[[:space:]]*[0-9]*' | sed 's/"line"[[:space:]]*:[[:space:]]*//')
+        local secret_preview=$(echo "$finding_json" | grep -o '"secret"[[:space:]]*:[[:space:]]*"[^"]*"' | sed 's/"secret"[[:space:]]*:[[:space:]]*"//;s/"$//')
+
+        # Extract verification status if present
+        local verified=0
+        local verification_status="unknown"
+        local verification_message=""
+
+        if echo "$finding_json" | grep -q '"verification_status"'; then
+            local status=$(echo "$finding_json" | grep -o '"status"[[:space:]]*:[[:space:]]*"[^"]*"' | sed 's/"status"[[:space:]]*:[[:space:]]*"//;s/"$//')
+            local message=$(echo "$finding_json" | grep -o '"message"[[:space:]]*:[[:space:]]*"[^"]*"' | sed 's/"message"[[:space:]]*:[[:space:]]*"//;s/"$//')
+
+            case "$status" in
+                Active|active)
+                    verified=1
+                    verification_status="active"
+                    ;;
+                Inactive|inactive)
+                    verified=1
+                    verification_status="inactive"
+                    ;;
+                *)
+                    verification_status="unknown"
+                    ;;
+            esac
+            verification_message="$message"
+        fi
+
+        if [ -n "$rule_id" ] && [ -n "$file_path" ]; then
+            store_finding "$repo_id" "$scan_id" "$rule_id" "$rule_name" "$file_path" "${line_number:-1}" "$secret_preview" "" "$verified" "$verification_status" "$verification_message"
+            ((count++))
+        fi
+    done < <(echo "$output" | grep -o '{"rule_id"[^}]*}' || echo "$output" | tr '},{' '\n' | grep 'rule_id')
+
+    echo "$count"
+}
+
+# Parse scanner text output and store findings (fallback)
 parse_and_store_findings() {
     local repo_id="$1"
     local scan_id="$2"
@@ -190,11 +266,6 @@ parse_and_store_findings() {
     local count=0
 
     # Parse the text output format
-    # Example:
-    # [1;31mopenai-api-key[0m /path/to/file:123:45
-    #   [1mRule:[0m OpenAI API Key
-    #   [1mSecret:[0m sk-p...12Ab
-
     local rule_id=""
     local rule_name=""
     local file_path=""
@@ -254,11 +325,21 @@ scan_repo() {
     # Start scan record
     local scan_id=$(start_scan "$repo_id")
 
+    # Build scanner command with options
+    local scanner_args=("$repo_url")
+    local use_json=false
+
+    if [ "$VERIFY_SECRETS" = true ]; then
+        scanner_args+=("--verify" "-f" "report")
+        use_json=true
+        log "  (with verification enabled)"
+    fi
+
     # Run scanner
     local output
     local exit_code=0
 
-    output=$(run_with_timeout "$SCAN_TIMEOUT" "$SCANNER" "$repo_url" 2>&1) || exit_code=$?
+    output=$(run_with_timeout "$SCAN_TIMEOUT" "$SCANNER" "${scanner_args[@]}" 2>&1) || exit_code=$?
 
     local findings_count=0
     local status="scanned"
@@ -274,7 +355,7 @@ scan_repo() {
         status="error"
         error_msg="Git error"
         warn "Error scanning: $repo_url"
-    elif [ $exit_code -ne 0 ] && [[ "$output" != *"Found"* ]] && [[ "$output" != *"No secrets found"* ]]; then
+    elif [ $exit_code -ne 0 ] && [[ "$output" != *"Found"* ]] && [[ "$output" != *"No secrets found"* ]] && [[ "$output" != *"findings"* ]]; then
         # Unknown error
         status="error"
         error_msg="Scanner error code: $exit_code"
@@ -283,9 +364,15 @@ scan_repo() {
         # Success - either no findings or has findings
         status="scanned"
 
-        # Parse output for findings if we have valid output with secrets
-        if [ -n "$output" ] && [[ "$output" == *"Found"* ]]; then
-            findings_count=$(parse_and_store_findings "$repo_id" "$scan_id" "$output")
+        # Parse output for findings
+        if [ -n "$output" ]; then
+            if [ "$use_json" = true ] && [[ "$output" == *"findings"* ]]; then
+                # Parse JSON output with verification info
+                findings_count=$(parse_and_store_findings_json "$repo_id" "$scan_id" "$output")
+            elif [[ "$output" == *"Found"* ]]; then
+                # Fallback to text parsing
+                findings_count=$(parse_and_store_findings "$repo_id" "$scan_id" "$output")
+            fi
 
             if [ "$findings_count" -gt 0 ]; then
                 finding "Found $findings_count secret(s) in $repo_url"

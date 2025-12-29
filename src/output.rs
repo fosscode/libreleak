@@ -35,7 +35,12 @@ impl ScanMetadata {
         }
     }
 
-    pub fn with_git_info(mut self, branch: Option<String>, commit: Option<String>, remote: Option<String>) -> Self {
+    pub fn with_git_info(
+        mut self,
+        branch: Option<String>,
+        commit: Option<String>,
+        remote: Option<String>,
+    ) -> Self {
         self.git_branch = branch;
         self.git_commit = commit;
         self.git_remote = remote;
@@ -73,7 +78,11 @@ fn get_timestamp() -> String {
     let mut year = 1970;
     let mut days = days_since_epoch;
     loop {
-        let days_in_year = if year % 4 == 0 && (year % 100 != 0 || year % 400 == 0) { 366 } else { 365 };
+        let days_in_year = if year % 4 == 0 && (year % 100 != 0 || year % 400 == 0) {
+            366
+        } else {
+            365
+        };
         if days < days_in_year {
             break;
         }
@@ -97,7 +106,10 @@ fn get_timestamp() -> String {
     }
     let day = days + 1;
 
-    format!("{:04}-{:02}-{:02}T{:02}:{:02}:{:02}Z", year, month, day, hours, minutes, seconds)
+    format!(
+        "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}Z",
+        year, month, day, hours, minutes, seconds
+    )
 }
 
 pub fn print_findings(findings: &[Finding], format: OutputFormat, show_context: bool) {
@@ -124,10 +136,7 @@ fn print_text(findings: &[Finding], show_context: bool) {
         return;
     }
 
-    println!(
-        "Found {} potential secret(s):\n",
-        findings.len()
-    );
+    println!("Found {} potential secret(s):\n", findings.len());
 
     for finding in findings {
         println!(
@@ -146,9 +155,12 @@ fn print_text(findings: &[Finding], show_context: bool) {
                 crate::verify::VerificationStatus::Unknown => ("❓", "\x1b[33m"),
                 crate::verify::VerificationStatus::NotSupported => ("🚫", "\x1b[90m"),
             };
-            println!("  \x1b[1mVerified:\x1b[0m {}{} {}\x1b[0m",
-                status_color, status_icon,
-                verification.message.as_deref().unwrap_or(""));
+            println!(
+                "  \x1b[1mVerified:\x1b[0m {}{} {}\x1b[0m",
+                status_color,
+                status_icon,
+                verification.message.as_deref().unwrap_or("")
+            );
         }
 
         if show_context && !finding.context.is_empty() {
@@ -159,14 +171,13 @@ fn print_text(findings: &[Finding], show_context: bool) {
                 } else {
                     " "
                 };
-                let line_style = if ctx.is_match {
-                    "\x1b[33m"
-                } else {
-                    "\x1b[90m"
-                };
+                let line_style = if ctx.is_match { "\x1b[33m" } else { "\x1b[90m" };
                 println!(
                     "    {} {:>4} {} {}\x1b[0m",
-                    prefix, ctx.line_num, "|", line_style.to_owned() + &ctx.content
+                    prefix,
+                    ctx.line_num,
+                    "|",
+                    line_style.to_owned() + &ctx.content
                 );
             }
         }
@@ -231,9 +242,7 @@ fn print_sarif(findings: &[Finding]) {
     println!("      \"driver\": {{");
     println!("        \"name\": \"libreleak\",");
     println!("        \"version\": \"{}\",", env!("CARGO_PKG_VERSION"));
-    println!(
-        "        \"informationUri\": \"https://github.com/fosscode/libreleak\","
-    );
+    println!("        \"informationUri\": \"https://github.com/fosscode/libreleak\",");
     println!("        \"rules\": []");
     println!("      }}");
     println!("    }},");
@@ -306,7 +315,12 @@ fn print_report(findings: &[Finding], metadata: Option<&ScanMetadata>) {
     // Count by category (first part of rule_id before hyphen)
     let mut category_counts: HashMap<String, usize> = HashMap::new();
     for finding in findings {
-        let category = finding.rule_id.split('-').next().unwrap_or("unknown").to_string();
+        let category = finding
+            .rule_id
+            .split('-')
+            .next()
+            .unwrap_or("unknown")
+            .to_string();
         *category_counts.entry(category).or_insert(0) += 1;
     }
 
@@ -364,18 +378,26 @@ fn print_report(findings: &[Finding], metadata: Option<&ScanMetadata>) {
     println!("    }},");
 
     // Severity assessment (basic heuristic)
-    let high_severity = findings.iter().filter(|f| {
-        f.rule_id.contains("private-key")
-            || f.rule_id.contains("aws")
-            || f.rule_id.contains("database")
-            || f.rule_id.contains("jwt")
-    }).count();
-    let medium_severity = findings.iter().filter(|f| {
-        f.rule_id.contains("api-key")
-            || f.rule_id.contains("token")
-            || f.rule_id.contains("secret")
-    }).count();
-    let low_severity = findings.len().saturating_sub(high_severity + medium_severity);
+    let high_severity = findings
+        .iter()
+        .filter(|f| {
+            f.rule_id.contains("private-key")
+                || f.rule_id.contains("aws")
+                || f.rule_id.contains("database")
+                || f.rule_id.contains("jwt")
+        })
+        .count();
+    let medium_severity = findings
+        .iter()
+        .filter(|f| {
+            f.rule_id.contains("api-key")
+                || f.rule_id.contains("token")
+                || f.rule_id.contains("secret")
+        })
+        .count();
+    let low_severity = findings
+        .len()
+        .saturating_sub(high_severity + medium_severity);
 
     println!("    \"severity_breakdown\": {{");
     println!("      \"high\": {},", high_severity);
@@ -392,17 +414,27 @@ fn print_report(findings: &[Finding], metadata: Option<&ScanMetadata>) {
         println!("    {{");
         println!("      \"id\": {},", i + 1);
         println!("      \"rule_id\": \"{}\",", escape_json(&finding.rule_id));
-        println!("      \"rule_name\": \"{}\",", escape_json(&finding.rule_name));
+        println!(
+            "      \"rule_name\": \"{}\",",
+            escape_json(&finding.rule_name)
+        );
         println!("      \"location\": {{");
         println!("        \"file\": \"{}\",", escape_json(&finding.file));
         println!("        \"line\": {},", finding.line);
         println!("        \"column\": {}", finding.column);
         println!("      }},");
-        println!("      \"secret_preview\": \"{}\",", escape_json(&finding.secret));
+        println!(
+            "      \"secret_preview\": \"{}\",",
+            escape_json(&finding.secret)
+        );
         println!("      \"context\": [");
 
         for (j, ctx) in finding.context.iter().enumerate() {
-            let ctx_comma = if j < finding.context.len() - 1 { "," } else { "" };
+            let ctx_comma = if j < finding.context.len() - 1 {
+                ","
+            } else {
+                ""
+            };
             println!(
                 "        {{\"line\": {}, \"content\": \"{}\", \"is_match\": {}}}{}",
                 ctx.line_num,

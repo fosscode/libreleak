@@ -19,11 +19,13 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 GITHUB_TOKEN="${GITHUB_TOKEN:-}"
 GITLAB_TOKEN="${GITLAB_TOKEN:-}"
 CODEBERG_TOKEN="${CODEBERG_TOKEN:-}"
+BITBUCKET_TOKEN="${BITBUCKET_TOKEN:-}"
 
 # Rate limiting
 GITHUB_DELAY=1
 GITLAB_DELAY=0.5
 CODEBERG_DELAY=0.5
+BITBUCKET_DELAY=0.5
 
 # Colors
 RED='\033[0;31m'
@@ -68,6 +70,10 @@ add_repo() {
         codeberg)
             owner=$(echo "$url" | sed -n 's|.*codeberg\.org/\([^/]*\)/.*|\1|p')
             name=$(echo "$url" | sed -n 's|.*codeberg\.org/[^/]*/\([^/\.]*\).*|\1|p')
+            ;;
+        bitbucket)
+            owner=$(echo "$url" | sed -n 's|.*bitbucket\.org/\([^/]*\)/.*|\1|p')
+            name=$(echo "$url" | sed -n 's|.*bitbucket\.org/[^/]*/\([^/\.]*\).*|\1|p')
             ;;
     esac
 
@@ -403,6 +409,253 @@ fetch_codeberg() {
     success "Codeberg: $new_count new repos (from $total results)"
 }
 
+# Fetch Bitbucket recent repos
+fetch_bitbucket() {
+    local days="${1:-7}"
+
+    log "Fetching Bitbucket repos (days: $days)..."
+
+    # Bitbucket API 2.0 - public repos
+    # Note: For authenticated access, use BITBUCKET_TOKEN as app password
+    local auth_header=""
+    if [ -n "$BITBUCKET_TOKEN" ]; then
+        # Format: username:app_password
+        auth_header="Authorization: Basic $(echo -n "$BITBUCKET_TOKEN" | base64)"
+    fi
+
+    local new_count=0
+    local total=0
+
+    # Bitbucket API to search for recently updated repos
+    # Paginated with next URL
+    local next_url="https://api.bitbucket.org/2.0/repositories?sort=-updated_on&pagelen=100"
+
+    for page in 1 2 3 4 5; do
+        if [ -z "$next_url" ]; then
+            break
+        fi
+
+        local response
+        if [ -n "$auth_header" ]; then
+            response=$(curl -s -H "$auth_header" "$next_url" 2>/dev/null)
+        else
+            response=$(curl -s "$next_url" 2>/dev/null)
+        fi
+
+        # Extract clone URLs (HTTPS)
+        # Bitbucket returns links.clone array with href
+        local repos=$(echo "$response" | grep -o '"href": "https://bitbucket.org/[^"]*\.git"' | \
+            sed 's/"href": "//;s/"$//' | sort -u)
+
+        if [ -z "$repos" ]; then
+            # Try alternate format
+            repos=$(echo "$response" | grep -o 'https://bitbucket\.org/[^"]*\.git' | sort -u)
+        fi
+
+        if [ -z "$repos" ]; then
+            break
+        fi
+
+        for repo_url in $repos; do
+            if add_repo "$repo_url" "bitbucket" "api" 5; then
+                ((new_count++))
+            fi
+            ((total++))
+        done
+
+        # Get next page URL
+        next_url=$(echo "$response" | grep -o '"next": "[^"]*"' | sed 's/"next": "//;s/"$//' | head -1)
+
+        sleep $BITBUCKET_DELAY
+    done
+
+    update_feed_cursor "bitbucket" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$new_count"
+    success "Bitbucket: $new_count new repos (from $total results)"
+}
+
+# Fetch repos from Reddit
+fetch_reddit() {
+    log "Fetching repos from Reddit..."
+
+    local subreddits=("github" "opensource" "programming" "coolgithubprojects" "SideProject" "webdev" "Python" "rust" "golang" "javascript")
+    local new_count=0
+    local total=0
+
+    for sub in "${subreddits[@]}"; do
+        log "  Checking r/$sub..."
+
+        # Reddit JSON API (no auth needed for public posts)
+        local url="https://www.reddit.com/r/$sub/new.json?limit=100"
+
+        local response
+        response=$(curl -s -A "libreleak/1.0" "$url" 2>/dev/null)
+
+        if [ -z "$response" ]; then
+            continue
+        fi
+
+        # Extract GitHub URLs from post URLs and selftext
+        local github_urls=$(echo "$response" | grep -oE 'https?://github\.com/[a-zA-Z0-9_-]+/[a-zA-Z0-9_.-]+' | \
+            sed 's|#.*||;s|/issues.*||;s|/pull.*||;s|/blob.*||;s|/tree.*||' | \
+            sort -u)
+
+        local gitlab_urls=$(echo "$response" | grep -oE 'https?://gitlab\.com/[a-zA-Z0-9_-]+/[a-zA-Z0-9_.-]+' | \
+            sed 's|#.*||;s|/-/.*||' | \
+            sort -u)
+
+        for repo_url in $github_urls; do
+            # Clean URL and add .git
+            repo_url="${repo_url%.git}.git"
+            if add_repo "$repo_url" "github" "reddit_$sub" 7; then
+                ((new_count++))
+            fi
+            ((total++))
+        done
+
+        for repo_url in $gitlab_urls; do
+            repo_url="${repo_url%.git}.git"
+            if add_repo "$repo_url" "gitlab" "reddit_$sub" 7; then
+                ((new_count++))
+            fi
+            ((total++))
+        done
+
+        sleep 2  # Be nice to Reddit
+    done
+
+    update_feed_cursor "reddit" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$new_count"
+    success "Reddit: $new_count new repos (from $total URLs)"
+}
+
+# Fetch repos from X/Twitter via Nitter instances
+fetch_x() {
+    log "Fetching repos from X/Twitter..."
+
+    # Nitter instances that might work
+    local nitter_instances=("nitter.poast.org" "nitter.privacydev.net" "nitter.1d4.us")
+
+    # Search terms that often share repos
+    local search_terms=("github.com" "new+repo" "open+source+release" "just+released")
+
+    local new_count=0
+    local total=0
+
+    # Try to find a working nitter instance
+    local working_nitter=""
+    for instance in "${nitter_instances[@]}"; do
+        if curl -s --max-time 5 "https://$instance" >/dev/null 2>&1; then
+            working_nitter="$instance"
+            log "  Using nitter instance: $working_nitter"
+            break
+        fi
+    done
+
+    if [ -z "$working_nitter" ]; then
+        warn "No working Nitter instance found, trying direct search..."
+
+        # Fallback: Use GitHub search for repos mentioned on Twitter
+        # This won't work directly, so let's try scraping some known accounts that share repos
+        local accounts=("github" "GitHubTrending" "pythontrending" "AiBreakfast")
+
+        for account in "${accounts[@]}"; do
+            log "  Checking @$account mentions..."
+
+            # Search GitHub for repos that might be from this account's shares
+            local url="https://api.github.com/search/repositories?q=created:>$(date -v-1d +%Y-%m-%d)&sort=stars&order=desc&per_page=50"
+
+            local auth_header=""
+            if [ -n "$GITHUB_TOKEN" ]; then
+                auth_header="Authorization: Bearer $GITHUB_TOKEN"
+            fi
+
+            local response
+            if [ -n "$auth_header" ]; then
+                response=$(curl -s -H "$auth_header" -H "Accept: application/vnd.github.v3+json" "$url" 2>/dev/null)
+            else
+                response=$(curl -s -H "Accept: application/vnd.github.v3+json" "$url" 2>/dev/null)
+            fi
+
+            local repos=$(echo "$response" | grep -o '"clone_url":"[^"]*"' | sed 's/"clone_url":"//;s/"//' | head -30)
+
+            for repo_url in $repos; do
+                if add_repo "$repo_url" "github" "x_trending" 8; then
+                    ((new_count++))
+                fi
+                ((total++))
+            done
+
+            sleep $GITHUB_DELAY
+        done
+    else
+        # Use Nitter to search for repo links
+        for term in "${search_terms[@]}"; do
+            log "  Searching: $term"
+
+            local url="https://$working_nitter/search?f=tweets&q=$term"
+            local response
+            response=$(curl -s -A "Mozilla/5.0" --max-time 10 "$url" 2>/dev/null)
+
+            # Extract GitHub URLs
+            local github_urls=$(echo "$response" | grep -oE 'https?://github\.com/[a-zA-Z0-9_-]+/[a-zA-Z0-9_.-]+' | \
+                sed 's|#.*||;s|/issues.*||;s|/pull.*||;s|/blob.*||;s|/tree.*||' | \
+                sort -u | head -50)
+
+            for repo_url in $github_urls; do
+                repo_url="${repo_url%.git}.git"
+                if add_repo "$repo_url" "github" "x_search" 7; then
+                    ((new_count++))
+                fi
+                ((total++))
+            done
+
+            sleep 3
+        done
+    fi
+
+    update_feed_cursor "x" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$new_count"
+    success "X/Twitter: $new_count new repos (from $total URLs)"
+}
+
+# Fetch repos from Hacker News
+fetch_hackernews() {
+    log "Fetching repos from Hacker News..."
+
+    local new_count=0
+    local total=0
+
+    # Get top and new stories
+    for endpoint in "topstories" "newstories" "showstories"; do
+        log "  Fetching $endpoint..."
+
+        local ids=$(curl -s "https://hacker-news.firebaseio.com/v0/$endpoint.json" 2>/dev/null | \
+            tr ',' '\n' | tr -d '[]' | head -100)
+
+        for id in $ids; do
+            if [ -z "$id" ]; then continue; fi
+
+            local item=$(curl -s "https://hacker-news.firebaseio.com/v0/item/$id.json" 2>/dev/null)
+
+            # Extract GitHub URLs from URL and text fields
+            local github_urls=$(echo "$item" | grep -oE 'https?://github\.com/[a-zA-Z0-9_-]+/[a-zA-Z0-9_.-]+' | \
+                sed 's|#.*||;s|/issues.*||;s|/pull.*||;s|/blob.*||;s|/tree.*||' | \
+                sort -u)
+
+            for repo_url in $github_urls; do
+                repo_url="${repo_url%.git}.git"
+                if add_repo "$repo_url" "github" "hackernews" 8; then
+                    ((new_count++))
+                fi
+                ((total++))
+            done
+        done
+
+        sleep 0.5
+    done
+
+    update_feed_cursor "hackernews" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$new_count"
+    success "Hacker News: $new_count new repos (from $total URLs)"
+}
+
 # Fetch high-value targets (AI/ML companies, etc.)
 fetch_high_value() {
     log "Fetching high-value targets..."
@@ -478,8 +731,25 @@ main() {
         codeberg)
             fetch_codeberg
             ;;
+        bitbucket)
+            fetch_bitbucket "${2:-7}"
+            ;;
         high-value|hv)
             fetch_high_value
+            ;;
+        reddit)
+            fetch_reddit
+            ;;
+        x|twitter)
+            fetch_x
+            ;;
+        hackernews|hn)
+            fetch_hackernews
+            ;;
+        social)
+            fetch_reddit
+            fetch_x
+            fetch_hackernews
             ;;
         all)
             fetch_github_events
@@ -487,6 +757,10 @@ main() {
             fetch_github_trending "" 3
             fetch_gitlab 7
             fetch_codeberg
+            fetch_bitbucket 7
+            fetch_reddit
+            fetch_x
+            fetch_hackernews
             fetch_high_value
             ;;
         *)
@@ -498,6 +772,11 @@ main() {
             echo "  github-trending  GitHub trending repos"
             echo "  gitlab           GitLab recent repos"
             echo "  codeberg         Codeberg recent repos"
+            echo "  bitbucket        Bitbucket recent repos"
+            echo "  reddit           Reddit subreddits (r/github, r/programming, etc.)"
+            echo "  x|twitter        X/Twitter via Nitter or trending"
+            echo "  hackernews|hn    Hacker News top/new stories"
+            echo "  social           All social sources (reddit, x, hackernews)"
             echo "  high-value       High-value org targets (OpenAI, Anthropic, etc.)"
             echo "  all              Fetch from all sources (default)"
             exit 1

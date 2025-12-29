@@ -55,9 +55,14 @@ pub fn verify_secret(finding: &Finding) -> VerificationResult {
             "openrouter-api-key" => verify_openrouter(&finding.secret),
             "groq-api-key" => verify_groq(&finding.secret),
             "perplexity-api-key" => verify_perplexity(&finding.secret),
+            "gcp-api-key" | "gemini-api-key" | "gemini-ultra-api-key" => {
+                verify_gemini(&finding.secret)
+            }
 
             // Communication Platforms
-            "slack-bot-token" | "slack-user-token" | "slack-app-token" => verify_slack(&finding.secret),
+            "slack-bot-token" | "slack-user-token" | "slack-app-token" => {
+                verify_slack(&finding.secret)
+            }
             "discord-bot-token" => verify_discord(&finding.secret),
 
             // Cloud Providers
@@ -194,6 +199,69 @@ fn verify_perplexity(token: &str) -> VerificationResult {
 }
 
 #[cfg(feature = "verify")]
+fn verify_gemini(token: &str) -> VerificationResult {
+    // Google Gemini API - list models to check if key is valid
+    let url = format!(
+        "https://generativelanguage.googleapis.com/v1/models?key={}",
+        token
+    );
+
+    let output = std::process::Command::new("curl")
+        .args(["-s", "-w", "\n%{http_code}"])
+        .arg(&url)
+        .output();
+
+    match output {
+        Ok(out) => {
+            let output_str = String::from_utf8_lossy(&out.stdout);
+            let lines: Vec<&str> = output_str.trim().lines().collect();
+            let status_code: u16 = lines.last().and_then(|s| s.parse().ok()).unwrap_or(0);
+
+            // Check response body for specific error messages
+            let body = lines[..lines.len().saturating_sub(1)].join("\n");
+
+            if body.contains("API key expired") {
+                return VerificationResult {
+                    status: VerificationStatus::Inactive,
+                    message: Some("Google API key expired".to_string()),
+                };
+            }
+
+            if body.contains("API key was reported as leaked") || body.contains("PERMISSION_DENIED")
+            {
+                return VerificationResult {
+                    status: VerificationStatus::Inactive,
+                    message: Some("Google disabled key: reported as leaked".to_string()),
+                };
+            }
+
+            match status_code {
+                200 => VerificationResult {
+                    status: VerificationStatus::Active,
+                    message: Some("Google/Gemini API key is valid".to_string()),
+                },
+                400 | 401 | 403 => VerificationResult {
+                    status: VerificationStatus::Inactive,
+                    message: Some("Google/Gemini API key is invalid".to_string()),
+                },
+                429 => VerificationResult {
+                    status: VerificationStatus::Unknown,
+                    message: Some("Rate limited".to_string()),
+                },
+                _ => VerificationResult {
+                    status: VerificationStatus::Unknown,
+                    message: Some(format!("HTTP {}", status_code)),
+                },
+            }
+        }
+        Err(e) => VerificationResult {
+            status: VerificationStatus::Unknown,
+            message: Some(format!("Network error: {}", e)),
+        },
+    }
+}
+
+#[cfg(feature = "verify")]
 fn verify_slack(token: &str) -> VerificationResult {
     http_verify(
         "https://slack.com/api/auth.test",
@@ -232,8 +300,13 @@ fn verify_stripe(token: &str) -> VerificationResult {
     // Use basic auth with token as username, empty password
     let output = std::process::Command::new("curl")
         .args([
-            "-s", "-o", "/dev/null", "-w", "%{http_code}",
-            "-u", &format!("{}:", token),
+            "-s",
+            "-o",
+            "/dev/null",
+            "-w",
+            "%{http_code}",
+            "-u",
+            &format!("{}:", token),
         ])
         .arg("https://api.stripe.com/v1/charges")
         .output();
@@ -313,10 +386,7 @@ fn verify_newrelic(token: &str) -> VerificationResult {
     http_verify_with_method(
         "https://api.newrelic.com/graphql",
         "POST",
-        &[
-            ("Content-Type", "application/json"),
-            ("API-Key", token),
-        ],
+        &[("Content-Type", "application/json"), ("API-Key", token)],
         Some("{\"query\": \"{ requestContext { userId apiKey } }\"}"),
     )
 }
@@ -327,8 +397,13 @@ fn verify_twilio(combined_key: &str) -> VerificationResult {
     if let Some((account_sid, auth_token)) = combined_key.split_once(':') {
         let output = std::process::Command::new("curl")
             .args([
-                "-s", "-o", "/dev/null", "-w", "%{http_code}",
-                "-u", &format!("{}:{}", account_sid, auth_token),
+                "-s",
+                "-o",
+                "/dev/null",
+                "-w",
+                "%{http_code}",
+                "-u",
+                &format!("{}:{}", account_sid, auth_token),
             ])
             .arg("https://api.twilio.com/2010-04-01/Accounts.json")
             .output();
@@ -390,8 +465,13 @@ fn verify_mailgun(token: &str) -> VerificationResult {
     // Mailgun uses api:token format
     let output = std::process::Command::new("curl")
         .args([
-            "-s", "-o", "/dev/null", "-w", "%{http_code}",
-            "-u", &format!("api:{}", token),
+            "-s",
+            "-o",
+            "/dev/null",
+            "-w",
+            "%{http_code}",
+            "-u",
+            &format!("api:{}", token),
         ])
         .arg("https://api.mailgun.net/v3/domains")
         .output();
@@ -441,7 +521,12 @@ fn http_verify(url: &str, headers: &[(&str, &str)]) -> VerificationResult {
 }
 
 #[cfg(feature = "verify")]
-fn http_verify_with_method(url: &str, method: &str, headers: &[(&str, &str)], body: Option<&str>) -> VerificationResult {
+fn http_verify_with_method(
+    url: &str,
+    method: &str,
+    headers: &[(&str, &str)],
+    body: Option<&str>,
+) -> VerificationResult {
     let mut cmd = std::process::Command::new("curl");
     cmd.args(["-s", "-o", "/dev/null", "-w", "%{http_code}", "-X", method]);
 
@@ -518,18 +603,18 @@ mod tests {
     #[test]
     #[cfg(feature = "verify")]
     fn test_github_verification_invalid_token() {
-    let finding = Finding {
-        rule_id: "github-pat".to_string(),
-        rule_name: "GitHub Personal Access Token".to_string(),
-        file: "test.txt".to_string(),
-        line: 1,
-        column: 0,
-        matched: "ghp_invalid_token_12345".to_string(),
-        secret: "ghp_invalid_token_12345".to_string(),
-        context: vec![],
-        #[cfg(feature = "verify")]
-        verification_status: None,
-    };
+        let finding = Finding {
+            rule_id: "github-pat".to_string(),
+            rule_name: "GitHub Personal Access Token".to_string(),
+            file: "test.txt".to_string(),
+            line: 1,
+            column: 0,
+            matched: "ghp_invalid_token_12345".to_string(),
+            secret: "ghp_invalid_token_12345".to_string(),
+            context: vec![],
+            #[cfg(feature = "verify")]
+            verification_status: None,
+        };
 
         let result = verify_secret(&finding);
         // Should return Inactive for invalid token (401 response)
@@ -539,18 +624,18 @@ mod tests {
     #[test]
     #[cfg(feature = "verify")]
     fn test_unsupported_service() {
-    let finding = Finding {
-        rule_id: "unsupported-service".to_string(),
-        rule_name: "Unsupported Service".to_string(),
-        file: "test.txt".to_string(),
-        line: 1,
-        column: 0,
-        matched: "some-secret".to_string(),
-        secret: "some-secret".to_string(),
-        context: vec![],
-        #[cfg(feature = "verify")]
-        verification_status: None,
-    };
+        let finding = Finding {
+            rule_id: "unsupported-service".to_string(),
+            rule_name: "Unsupported Service".to_string(),
+            file: "test.txt".to_string(),
+            line: 1,
+            column: 0,
+            matched: "some-secret".to_string(),
+            secret: "some-secret".to_string(),
+            context: vec![],
+            #[cfg(feature = "verify")]
+            verification_status: None,
+        };
 
         let result = verify_secret(&finding);
         assert_eq!(result.status, VerificationStatus::NotSupported);
@@ -576,9 +661,9 @@ mod tests {
         let result = verify_secret(&finding);
         // Should attempt verification and likely fail with network error or invalid response
         // We just test that it doesn't panic and returns a reasonable status
-        assert!(matches!(result.status,
-            VerificationStatus::Active |
-            VerificationStatus::Inactive |
-            VerificationStatus::Unknown));
+        assert!(matches!(
+            result.status,
+            VerificationStatus::Active | VerificationStatus::Inactive | VerificationStatus::Unknown
+        ));
     }
 }
