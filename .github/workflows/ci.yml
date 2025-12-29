@@ -39,7 +39,18 @@ jobs:
         run: cargo build --release
 
       - name: Scan repository
-        run: ./target/release/libreleak --fail-on-leak .
+        run: |
+          # Scan source files, excluding:
+          # - tests/ directory (intentional fake secrets for testing)
+          # - test_*.sh scripts (test fixtures)
+          # - docker-compose.yml (template variables like ${VAR:-default})
+          # - VERIFICATION_STATUS.md (documentation with redacted examples)
+          find . -type f \( -name "*.rs" -o -name "*.py" -o -name "*.sh" -o -name "*.toml" -o -name "*.md" \) \
+            ! -path "./tests/*" \
+            ! -path "./target/*" \
+            ! -name "test_*.sh" \
+            ! -name "VERIFICATION_STATUS.md" \
+            -print0 | xargs -0 ./target/release/libreleak --fail-on-leak
 
   release:
     needs: [test, scan]
