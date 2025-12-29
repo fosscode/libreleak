@@ -52,8 +52,21 @@ jobs:
             ! -name "VERIFICATION_STATUS.md" \
             -print0 | xargs -0 ./target/release/libreleak --fail-on-leak
 
+  # Test the published marketplace action
+  action-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Test marketplace action
+        uses: fosscode/libreleak@v1
+        with:
+          path: './src'
+          fail-on-leak: 'false'
+          format: 'text'
+
   release:
-    needs: [test, scan]
+    needs: [test, scan, action-test]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
