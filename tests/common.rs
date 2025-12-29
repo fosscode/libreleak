@@ -402,8 +402,8 @@ MHQCAQEEIBYwFQXWFHCeBRWNJBZCUQKCAQEA0Z3VS5JJcds3xfn/EXAMPLEONLY
     // Notion
     pub const NOTION_TOKEN: &str = "secret_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0";
 
-    // Discord MTI variant
-    pub const DISCORD_BOT_TOKEN_MTI: &str = "MTI1234567890.a1b2c3.d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1";
+    // Discord MTI variant (min 59 chars)
+    pub const DISCORD_BOT_TOKEN_MTI: &str = "MTI1234567890.a1b2c3.d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2";
 }
 
 // ============================================================================

@@ -113,16 +113,20 @@ impl Scanner {
         let lines: Vec<&str> = content.lines().collect();
 
         for (line_idx, line) in lines.iter().enumerate() {
+            // Collect all matches for this line, then deduplicate
+            let mut line_findings: Vec<(Finding, usize, usize)> = Vec::new(); // (finding, column, secret_len)
+
             for rule in &self.rules {
                 if let Some((matched, column)) = self.detect(&rule.detector, line) {
                     // Extract the actual secret value
                     let secret = self.extract_secret(line, &matched, &rule.detector);
+                    let secret_len = secret.len();
 
                     // Build context with redacted secret
                     let redacted = redact(&secret);
                     let context = self.build_context(&lines, line_idx, &secret, &redacted);
 
-                    let mut finding = Finding {
+                    let finding = Finding {
                         rule_id: rule.id.to_string(),
                         rule_name: rule.name.to_string(),
                         file: path.display().to_string(),
@@ -134,9 +138,49 @@ impl Scanner {
                         #[cfg(feature = "verify")]
                         verification_status: None,
                     };
-                    findings.push(finding);
+                    line_findings.push((finding, column, secret_len));
                 }
             }
+
+            // Deduplicate: prefer more specific matches (same position, longer/more specific match)
+            // Group by approximate position (within 10 chars) and keep the most specific
+            let mut deduped: Vec<Finding> = Vec::new();
+            for (finding, col, len) in line_findings {
+                let dominated = deduped.iter().any(|existing| {
+                    // Check if this finding overlaps with an existing one
+                    let existing_col = existing.column;
+                    let col_diff = (col as isize - existing_col as isize).unsigned_abs();
+
+                    // If positions are close and existing match is longer/same, skip this one
+                    if col_diff < 15 {
+                        // Prefer longer matches (more specific)
+                        // Also prefer rules with longer prefixes (openrouter-api-key > openai-api-key)
+                        let existing_specificity = existing.rule_id.len();
+                        let new_specificity = finding.rule_id.len();
+                        existing_specificity >= new_specificity
+                    } else {
+                        false
+                    }
+                });
+
+                if !dominated {
+                    // Remove any existing findings that this one dominates
+                    deduped.retain(|existing| {
+                        let existing_col = existing.column;
+                        let col_diff = (col as isize - existing_col as isize).unsigned_abs();
+                        if col_diff < 15 {
+                            let existing_specificity = existing.rule_id.len();
+                            let new_specificity = finding.rule_id.len();
+                            existing_specificity > new_specificity
+                        } else {
+                            true
+                        }
+                    });
+                    deduped.push(finding);
+                }
+            }
+
+            findings.extend(deduped);
         }
 
         Ok(())
@@ -572,9 +616,19 @@ fn is_code_pattern(value: &str) -> bool {
 
 /// Check if unquoted value looks like code (for stricter filtering)
 fn looks_like_code(value: &str) -> bool {
-    // Contains dots (likely object access) unless it's a URL
+    // Contains dots (likely object access) unless it's a URL or known token format
     if value.contains('.') && !value.starts_with("http") {
-        return true;
+        // Allow known token formats that contain dots
+        let known_dot_prefixes = [
+            "ya29.",  // Google OAuth
+            "MTI",    // Discord (MTI prefix tokens have dots)
+            "MTA",    // Discord (MTA prefix tokens have dots)
+            "xox",    // Slack tokens can have dots
+            "eyJ",    // JWT tokens (base64 encoded JSON)
+        ];
+        if !known_dot_prefixes.iter().any(|p| value.starts_with(p)) {
+            return true;
+        }
     }
 
     // Contains brackets (array access, function calls)

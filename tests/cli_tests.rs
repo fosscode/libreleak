@@ -170,7 +170,11 @@ fn test_text_format_default() {
 
     assert!(out.contains("Found"), "Should show findings count");
     assert!(out.contains("Rule:"), "Should show rule name");
-    assert!(out.contains("openai"), "Should mention the rule");
+    // OpenAI and DeepSeek both use sk- prefix, so either match is valid
+    assert!(
+        out.contains("openai") || out.contains("deepseek"),
+        "Should mention the rule"
+    );
 }
 
 #[test]
@@ -398,7 +402,11 @@ fn test_scan_specific_file() {
     let output = cargo_run(&[file.to_str().unwrap()]);
     let out = stdout(&output);
 
-    assert!(out.contains("openai"), "Should find secret in specific file");
+    // OpenAI and DeepSeek both use sk- prefix, so either match is valid
+    assert!(
+        out.contains("openai") || out.contains("deepseek"),
+        "Should find secret in specific file"
+    );
 }
 
 #[test]
