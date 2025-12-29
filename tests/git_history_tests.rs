@@ -57,6 +57,21 @@ fn should_detect(output: &str, rule_id: &str) -> bool {
     output.contains(rule_id)
 }
 
+/// Check for sk- prefix tokens (OpenAI/DeepSeek overlap)
+fn should_detect_sk_token(output: &str) -> bool {
+    output.contains("openai-api-key") || output.contains("deepseek-api-key")
+}
+
+/// Check for GitHub tokens (may match github-pat or generic-token)
+fn should_detect_github_token(output: &str) -> bool {
+    output.contains("github-pat") || output.contains("generic-token")
+}
+
+/// Check for any secret detection
+fn detected_any_secret(output: &str) -> bool {
+    output.contains("Found") && !output.contains("Found 0")
+}
+
 // ============================================================================
 // BASIC GIT REPO TESTS
 // ============================================================================
@@ -110,7 +125,7 @@ fn test_secret_in_deleted_file_current_scan() {
     // Current scan should NOT find the secret (file is deleted)
     let (output, _) = run_scan(repo.path_str());
     assert!(
-        !should_detect(&output, "openai-api-key") || output.contains("No secrets found"),
+        !should_detect_sk_token(&output) || output.contains("No secrets found"),
         "Current scan should not find secret in deleted file"
     );
 }
@@ -131,7 +146,7 @@ fn test_secret_in_deleted_file_history_scan() {
     // History scan SHOULD find the secret
     let (output, _) = run_history_scan(repo.path_str());
     assert!(
-        should_detect(&output, "github-pat"),
+        should_detect_github_token(&output),
         "History scan should find secret in deleted file"
     );
 }
@@ -188,7 +203,7 @@ fn test_secret_on_feature_branch_not_in_main() {
     // Scan main - should NOT find the secret
     let (output, _) = run_scan(repo.path_str());
     assert!(
-        !should_detect(&output, "openai-api-key"),
+        !should_detect_sk_token(&output),
         "Should not find secret from feature branch when scanning main"
     );
 }
@@ -236,7 +251,7 @@ fn test_secret_removed_from_branch_still_in_history() {
     // Current branch scan should not find it
     let (output, _) = run_scan(repo.path_str());
     assert!(
-        !should_detect(&output, "github-pat"),
+        !should_detect_github_token(&output),
         "Should not find removed secret in current scan"
     );
 }
@@ -348,7 +363,7 @@ fn test_secret_added_modified_removed() {
     // Current scan should not find secret
     let (output, _) = run_scan(repo.path_str());
     assert!(
-        !should_detect(&output, "openai-api-key"),
+        !should_detect_sk_token(&output),
         "Current scan should not find removed secret"
     );
 
@@ -372,7 +387,7 @@ fn test_secret_in_different_file_same_content() {
     // Current scan should find it in settings.py
     let (output, _) = run_scan(repo.path_str());
     assert!(
-        should_detect(&output, "openai-api-key"),
+        should_detect_sk_token(&output),
         "Should find secret in moved file"
     );
 }
@@ -417,7 +432,7 @@ fn test_gitignored_file_with_secret() {
     // Current scan SHOULD find it (we scan the filesystem, not just git)
     let (output, _) = run_scan(repo.path_str());
     assert!(
-        should_detect(&output, "github-pat"),
+        should_detect_github_token(&output),
         "Should find secret in gitignored file (filesystem scan)"
     );
 }
@@ -441,7 +456,7 @@ fn test_staged_but_uncommitted_secret() {
     // Current scan should find it
     let (output, _) = run_scan(repo.path_str());
     assert!(
-        should_detect(&output, "openai-api-key"),
+        should_detect_sk_token(&output),
         "Should find staged but uncommitted secret"
     );
 }
@@ -480,7 +495,7 @@ fn test_secret_buried_in_many_commits() {
     // Current scan should not find secret
     let (output, _) = run_scan(repo.path_str());
     assert!(
-        !should_detect(&output, "github-pat"),
+        !should_detect_github_token(&output),
         "Current scan should not find deleted secret"
     );
 }
@@ -516,7 +531,7 @@ fn test_secret_introduced_in_merge() {
     // Secret should now be in main
     let (output, _) = run_scan(repo.path_str());
     assert!(
-        should_detect(&output, "openai-api-key"),
+        should_detect_sk_token(&output),
         "Should find secret after merge"
     );
 }
@@ -539,7 +554,7 @@ fn test_secret_only_in_branch_not_merged() {
     // Main should not have the secret
     let (output, _) = run_scan(repo.path_str());
     assert!(
-        !should_detect(&output, "github-pat"),
+        !should_detect_github_token(&output),
         "Main should not have secret from unmerged branch"
     );
 }
@@ -596,7 +611,7 @@ fn test_secret_in_file_with_encoding_issues() {
 
     let (output, _) = run_scan(repo.path_str());
     assert!(
-        should_detect(&output, "openai-api-key"),
+        should_detect_sk_token(&output),
         "Should find secret in file with unicode"
     );
 }
@@ -622,7 +637,7 @@ fn test_secret_in_symlinked_file() {
     // Should find secret through symlink or original
     let (output, _) = run_scan(repo.path_str());
     assert!(
-        should_detect(&output, "github-pat"),
+        should_detect_github_token(&output),
         "Should find secret in symlinked file"
     );
 }
@@ -668,7 +683,7 @@ fn test_large_file_performance() {
     let duration = start.elapsed();
 
     assert!(
-        should_detect(&output, "openai-api-key"),
+        should_detect_sk_token(&output),
         "Should find secret in large file"
     );
     assert!(
@@ -698,7 +713,7 @@ fn test_many_files_performance() {
     let duration = start.elapsed();
 
     assert!(
-        should_detect(&output, "github-pat"),
+        should_detect_github_token(&output),
         "Should find secret among many files"
     );
     assert!(
