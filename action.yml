@@ -10,7 +10,7 @@ inputs:
     description: 'Fail the workflow if secrets are found'
     default: 'true'
   format:
-    description: 'Output format (text, json, sarif)'
+    description: 'Output format (text, json, sarif, report)'
     default: 'text'
   exclude-rules:
     description: 'Comma-separated list of rule IDs to exclude'
@@ -67,7 +67,27 @@ runs:
           ARGS="$ARGS --only ${{ inputs.only-rules }}"
         fi
 
-        ${{ github.action_path }}/target/release/libreleak $ARGS
+        # Run scan and capture output
+        set +e
+        OUTPUT=$(${{ github.action_path }}/target/release/libreleak $ARGS 2>&1)
+        EXIT_CODE=$?
+        set -e
+
+        echo "$OUTPUT"
+
+        # Extract findings count from output
+        if echo "$OUTPUT" | grep -q "Found [0-9]* potential secret"; then
+          FINDINGS=$(echo "$OUTPUT" | grep -o "Found [0-9]* potential secret" | grep -o "[0-9]*")
+        elif echo "$OUTPUT" | grep -q "No secrets found"; then
+          FINDINGS=0
+        else
+          # For JSON/SARIF, count rule_id occurrences
+          FINDINGS=$(echo "$OUTPUT" | grep -c '"rule_id"' || echo "0")
+        fi
+
+        echo "findings=$FINDINGS" >> $GITHUB_OUTPUT
+
+        exit $EXIT_CODE
 
 branding:
   icon: 'shield'

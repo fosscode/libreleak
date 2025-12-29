@@ -247,6 +247,82 @@ fn test_sarif_format_empty() {
     assert!(out.contains("\"results\": ["), "Should have empty results");
 }
 
+#[test]
+fn test_report_format() {
+    let dir = TestDir::new("format-report");
+    dir.write_file("config.py", &format!("KEY = '{}'", OPENAI_API_KEY));
+
+    let output = cargo_run(&[dir.path_str(), "-f", "report"]);
+    let out = stdout(&output);
+
+    assert!(
+        out.contains("\"report_version\""),
+        "Should have report version"
+    );
+    assert!(
+        out.contains("\"scanner\": \"libreleak\""),
+        "Should have scanner name"
+    );
+    assert!(out.contains("\"timestamp\""), "Should have timestamp");
+    assert!(out.contains("\"summary\""), "Should have summary section");
+    assert!(
+        out.contains("\"total_findings\""),
+        "Should have total findings count"
+    );
+    assert!(
+        out.contains("\"findings_by_rule\""),
+        "Should have findings by rule"
+    );
+    assert!(
+        out.contains("\"severity_breakdown\""),
+        "Should have severity breakdown"
+    );
+    assert!(out.contains("\"findings\""), "Should have findings array");
+}
+
+#[test]
+fn test_report_format_empty() {
+    let dir = TestDir::new("format-report-empty");
+    dir.write_file("clean.py", "print('clean')");
+
+    let output = cargo_run(&[dir.path_str(), "-f", "report"]);
+    let out = stdout(&output);
+
+    assert!(
+        out.contains("\"report_version\""),
+        "Should have report version"
+    );
+    assert!(
+        out.contains("\"total_findings\": 0"),
+        "Should have zero findings"
+    );
+    assert!(
+        out.contains("\"findings\": ["),
+        "Should have empty findings array"
+    );
+}
+
+#[test]
+fn test_report_format_multiple_findings() {
+    let dir = TestDir::new("format-report-multi");
+    dir.write_file(
+        "config.py",
+        &format!("GITHUB = '{}'\nAWS = '{}'", GITHUB_PAT, AWS_ACCESS_KEY_ID),
+    );
+
+    let output = cargo_run(&[dir.path_str(), "-f", "report"]);
+    let out = stdout(&output);
+
+    assert!(
+        out.contains("\"total_findings\": 2"),
+        "Should count all findings"
+    );
+    assert!(
+        out.contains("\"findings_by_category\""),
+        "Should categorize findings"
+    );
+}
+
 // ============================================================================
 // CONTEXT TESTS
 // ============================================================================

@@ -315,13 +315,14 @@ pub fn builtin_rules() -> Vec<Rule> {
             },
         },
         // === DeepSeek ===
+        // Note: DeepSeek uses sk- prefix like OpenAI but with different key format
+        // Use KeyValue detection to avoid false positives with OpenAI keys
         Rule {
             id: "deepseek-api-key",
             name: "DeepSeek API Key",
-            detector: Detector::Prefix {
-                prefix: "sk-",
-                min_len: 32,
-                charset: Charset::AlphaNum,
+            detector: Detector::KeyValue {
+                keys: &["DEEPSEEK_API_KEY", "deepseek_api_key", "DEEPSEEK_KEY"],
+                min_value_len: 32,
             },
         },
         Rule {
