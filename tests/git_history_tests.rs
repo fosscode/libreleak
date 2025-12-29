@@ -26,7 +26,10 @@ fn run_history_scan(path: &str) -> (String, i32) {
     let stdout = String::from_utf8_lossy(&output.stdout).to_string();
     let stderr = String::from_utf8_lossy(&output.stderr).to_string();
 
-    (format!("{}{}", stdout, stderr), output.status.code().unwrap_or(-1))
+    (
+        format!("{}{}", stdout, stderr),
+        output.status.code().unwrap_or(-1),
+    )
 }
 
 fn run_branch_scan(path: &str, branch: &str) -> (String, i32) {
@@ -38,7 +41,10 @@ fn run_branch_scan(path: &str, branch: &str) -> (String, i32) {
     let stdout = String::from_utf8_lossy(&output.stdout).to_string();
     let stderr = String::from_utf8_lossy(&output.stderr).to_string();
 
-    (format!("{}{}", stdout, stderr), output.status.code().unwrap_or(-1))
+    (
+        format!("{}{}", stdout, stderr),
+        output.status.code().unwrap_or(-1),
+    )
 }
 
 fn run_scan(path: &str) -> (String, i32) {
@@ -50,7 +56,10 @@ fn run_scan(path: &str) -> (String, i32) {
     let stdout = String::from_utf8_lossy(&output.stdout).to_string();
     let stderr = String::from_utf8_lossy(&output.stderr).to_string();
 
-    (format!("{}{}", stdout, stderr), output.status.code().unwrap_or(-1))
+    (
+        format!("{}{}", stdout, stderr),
+        output.status.code().unwrap_or(-1),
+    )
 }
 
 fn should_detect(output: &str, rule_id: &str) -> bool {
@@ -81,7 +90,10 @@ fn test_git_repo_creation() {
     let repo = TestGitRepo::new("basic-repo");
 
     // Verify repo was created
-    assert!(repo.path().join(".git").exists(), "Should create .git directory");
+    assert!(
+        repo.path().join(".git").exists(),
+        "Should create .git directory"
+    );
 
     // Create a file and commit
     repo.write_file("README.md", "# Test Repo");
@@ -102,7 +114,10 @@ fn test_git_branch_creation() {
     repo.checkout("main");
     // Note: Could be "master" or "main" depending on git config
     let branch = repo.get_current_branch();
-    assert!(branch == "master" || branch == "main", "Should be on main branch");
+    assert!(
+        branch == "master" || branch == "main",
+        "Should be on main branch"
+    );
 }
 
 // ============================================================================
@@ -306,10 +321,7 @@ fn test_secret_on_branch_with_special_characters() {
     repo.commit("Add config");
 
     // Verify we're on the branch
-    assert_eq!(
-        repo.get_current_branch(),
-        "feature/API-integration_v2.0"
-    );
+    assert_eq!(repo.get_current_branch(), "feature/API-integration_v2.0");
 }
 
 #[test]
@@ -345,19 +357,28 @@ fn test_secret_added_modified_removed() {
     // Add secret
     repo.write_file(
         "config.py",
-        &format!("# Configuration\nDEBUG = True\nAPI_KEY = '{}'", OPENAI_API_KEY),
+        &format!(
+            "# Configuration\nDEBUG = True\nAPI_KEY = '{}'",
+            OPENAI_API_KEY
+        ),
     );
     repo.commit("Add API key");
 
     // Modify (secret still there)
     repo.write_file(
         "config.py",
-        &format!("# Updated Configuration\nDEBUG = False\nAPI_KEY = '{}'", OPENAI_API_KEY),
+        &format!(
+            "# Updated Configuration\nDEBUG = False\nAPI_KEY = '{}'",
+            OPENAI_API_KEY
+        ),
     );
     repo.commit("Update debug flag");
 
     // Remove secret
-    repo.write_file("config.py", "# Updated Configuration\nDEBUG = False\n# API key moved to env");
+    repo.write_file(
+        "config.py",
+        "# Updated Configuration\nDEBUG = False\n# API key moved to env",
+    );
     repo.commit("Move API key to environment");
 
     // Current scan should not find secret
@@ -686,10 +707,7 @@ fn test_large_file_performance() {
         should_detect_sk_token(&output),
         "Should find secret in large file"
     );
-    assert!(
-        duration.as_secs() < 30,
-        "Should complete within 30 seconds"
-    );
+    assert!(duration.as_secs() < 30, "Should complete within 30 seconds");
 }
 
 #[test]
@@ -716,8 +734,5 @@ fn test_many_files_performance() {
         should_detect_github_token(&output),
         "Should find secret among many files"
     );
-    assert!(
-        duration.as_secs() < 30,
-        "Should complete within 30 seconds"
-    );
+    assert!(duration.as_secs() < 30, "Should complete within 30 seconds");
 }
