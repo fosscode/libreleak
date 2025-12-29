@@ -37,6 +37,7 @@ Discovers recently created repositories from public code hosting platforms.
 **Supported Platforms:**
 - **GitHub** - Most popular, requires API token for higher rate limits
 - **GitLab** - Second largest, good for FOSS projects
+- **Bitbucket** - Popular for enterprise and private teams
 - **Codeberg** - Privacy-focused Git hosting
 
 **Environment Variables:**
