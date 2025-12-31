@@ -22,6 +22,7 @@ fn rule_specificity(rule_id: &str) -> usize {
 pub struct Scanner {
     rules: Vec<Rule>,
     context_lines: usize,
+    redact_secrets: bool,
 }
 
 #[derive(Debug)]
@@ -33,6 +34,7 @@ pub struct Finding {
     pub column: usize,
     pub matched: String,
     pub secret: String,
+    pub secret_raw: String,
     pub context: Vec<ContextLine>,
     #[cfg(feature = "verify")]
     pub verification_status: Option<crate::verify::VerificationResult>,
@@ -50,11 +52,17 @@ impl Scanner {
         Self {
             rules,
             context_lines: 3, // Show 3 lines before/after
+            redact_secrets: true,
         }
     }
 
     pub fn with_context(mut self, lines: usize) -> Self {
         self.context_lines = lines;
+        self
+    }
+
+    pub fn with_redaction(mut self, redact_secrets: bool) -> Self {
+        self.redact_secrets = redact_secrets;
         self
     }
 
@@ -131,12 +139,21 @@ impl Scanner {
             for rule in &self.rules {
                 if let Some((matched, column)) = self.detect(&rule.detector, line) {
                     // Extract the actual secret value
-                    let secret = self.extract_secret(line, &matched, &rule.detector);
-                    let secret_len = secret.len();
+                    let secret_raw = self.extract_secret(line, &matched, &rule.detector);
+                    let secret_len = secret_raw.len();
 
-                    // Build context with redacted secret
-                    let redacted = redact(&secret);
-                    let context = self.build_context(&lines, line_idx, &secret, &redacted);
+                    let secret = if self.redact_secrets {
+                        redact(&secret_raw)
+                    } else {
+                        secret_raw.clone()
+                    };
+                    let matched = if self.redact_secrets {
+                        redact(&matched)
+                    } else {
+                        matched
+                    };
+
+                    let context = self.build_context(&lines, line_idx, &secret_raw, &secret);
 
                     let finding = Finding {
                         rule_id: rule.id.to_string(),
@@ -144,8 +161,9 @@ impl Scanner {
                         file: path.display().to_string(),
                         line: line_idx + 1,
                         column: column + 1,
-                        matched: redact(&matched),
-                        secret: redacted,
+                        matched,
+                        secret,
+                        secret_raw,
                         context,
                         #[cfg(feature = "verify")]
                         verification_status: None,
@@ -611,15 +629,14 @@ impl Scanner {
 }
 
 fn redact(secret: &str) -> String {
-    if secret.len() <= 10 {
-        "*".repeat(secret.len())
+    let char_count = secret.chars().count();
+    if char_count <= 10 {
+        "*".repeat(char_count)
     } else {
-        let visible = 4.min(secret.len() / 4);
-        format!(
-            "{}...{}",
-            &secret[..visible],
-            &secret[secret.len() - visible..]
-        )
+        let visible = 4.min(char_count / 4);
+        let prefix: String = secret.chars().take(visible).collect();
+        let suffix: String = secret.chars().skip(char_count - visible).collect();
+        format!("{}...{}", prefix, suffix)
     }
 }
 
@@ -821,7 +838,7 @@ fn is_placeholder(value: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::rules::{Charset, Detector, Rule};
+    use crate::rules::{Charset, Detector};
 
     // ========================================================================
     // REDACTION TESTS
@@ -1656,5 +1673,649 @@ mod tests {
         let line = "token = password_input";
         let result = scanner.detect_key_value(line, &["token"], 8);
         assert!(result.is_none(), "Should skip unquoted code-like value");
+    }
+
+    // ========================================================================
+    // SCANNER BUILDER TESTS
+    // ========================================================================
+
+    #[test]
+    fn test_scanner_new_default_values() {
+        let scanner = Scanner::new(vec![]);
+        assert_eq!(scanner.context_lines, 3);
+        assert!(scanner.redact_secrets);
+    }
+
+    #[test]
+    fn test_scanner_with_context() {
+        let scanner = Scanner::new(vec![]).with_context(5);
+        assert_eq!(scanner.context_lines, 5);
+    }
+
+    #[test]
+    fn test_scanner_with_context_zero() {
+        let scanner = Scanner::new(vec![]).with_context(0);
+        assert_eq!(scanner.context_lines, 0);
+    }
+
+    #[test]
+    fn test_scanner_with_redaction_false() {
+        let scanner = Scanner::new(vec![]).with_redaction(false);
+        assert!(!scanner.redact_secrets);
+    }
+
+    #[test]
+    fn test_scanner_with_redaction_true() {
+        let scanner = Scanner::new(vec![]).with_redaction(true);
+        assert!(scanner.redact_secrets);
+    }
+
+    #[test]
+    fn test_scanner_builder_chain() {
+        let scanner = Scanner::new(vec![]).with_context(10).with_redaction(false);
+        assert_eq!(scanner.context_lines, 10);
+        assert!(!scanner.redact_secrets);
+    }
+
+    // ========================================================================
+    // RULE SPECIFICITY TESTS
+    // ========================================================================
+
+    #[test]
+    fn test_rule_specificity_generic_rules() {
+        assert_eq!(rule_specificity("generic-api-key"), 0);
+        assert_eq!(rule_specificity("generic-password"), 0);
+        assert_eq!(rule_specificity("generic-token"), 0);
+    }
+
+    #[test]
+    fn test_rule_specificity_specific_rules() {
+        assert_eq!(rule_specificity("github-pat"), 10);
+        assert_eq!(rule_specificity("aws-access-key-id"), 17);
+        assert_eq!(rule_specificity("openai-api-key"), 14);
+    }
+
+    #[test]
+    fn test_rule_specificity_ordering() {
+        // Specific rules should have higher specificity than generic
+        assert!(rule_specificity("github-pat") > rule_specificity("generic-token"));
+        assert!(rule_specificity("aws-access-key-id") > rule_specificity("generic-api-key"));
+    }
+
+    // ========================================================================
+    // CONTAINS DETECTOR TESTS
+    // ========================================================================
+
+    #[test]
+    fn test_detect_contains_found() {
+        let scanner = make_test_scanner();
+        let detector = Detector::Contains {
+            needle: "SECRET_KEY",
+        };
+        let line = "export SECRET_KEY=abc123";
+        let result = scanner.detect(&detector, line);
+
+        assert!(result.is_some());
+        let (matched, pos) = result.unwrap();
+        assert_eq!(matched, "SECRET_KEY");
+        assert_eq!(pos, 7);
+    }
+
+    #[test]
+    fn test_detect_contains_not_found() {
+        let scanner = make_test_scanner();
+        let detector = Detector::Contains {
+            needle: "SECRET_KEY",
+        };
+        let line = "export API_TOKEN=abc123";
+        let result = scanner.detect(&detector, line);
+
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_detect_contains_multiple_occurrences() {
+        let scanner = make_test_scanner();
+        let detector = Detector::Contains { needle: "token" };
+        let line = "token1 = get_token()";
+        let result = scanner.detect(&detector, line);
+
+        assert!(result.is_some());
+        let (_, pos) = result.unwrap();
+        // Should find first occurrence
+        assert_eq!(pos, 0);
+    }
+
+    // ========================================================================
+    // EXTRACT SECRET FOR CONTAINS DETECTOR TESTS
+    // ========================================================================
+
+    #[test]
+    fn test_extract_secret_contains() {
+        let scanner = make_test_scanner();
+        let detector = Detector::Contains { needle: "TOKEN" };
+        let line = "MY_SECRET_TOKEN_VALUE is here";
+        let matched = "TOKEN";
+
+        let secret = scanner.extract_secret(line, matched, &detector);
+        // Should extract the surrounding token
+        assert_eq!(secret, "MY_SECRET_TOKEN_VALUE");
+    }
+
+    #[test]
+    fn test_extract_secret_contains_at_start() {
+        let scanner = make_test_scanner();
+        let detector = Detector::Contains { needle: "SECRET" };
+        let line = "SECRET_KEY=value";
+        let matched = "SECRET";
+
+        let secret = scanner.extract_secret(line, matched, &detector);
+        assert_eq!(secret, "SECRET_KEY=value");
+    }
+
+    #[test]
+    fn test_extract_secret_contains_at_end() {
+        let scanner = make_test_scanner();
+        let detector = Detector::Contains { needle: "KEY" };
+        let line = "export API_KEY";
+        let matched = "KEY";
+
+        let secret = scanner.extract_secret(line, matched, &detector);
+        assert_eq!(secret, "API_KEY");
+    }
+
+    #[test]
+    fn test_extract_secret_contains_no_match() {
+        let scanner = make_test_scanner();
+        let detector = Detector::Contains { needle: "NOTFOUND" };
+        let line = "nothing here";
+        let matched = "NOTFOUND";
+
+        // When needle isn't actually found, returns matched string
+        let secret = scanner.extract_secret(line, matched, &detector);
+        assert_eq!(secret, matched);
+    }
+
+    // ========================================================================
+    // REDACTION EDGE CASES
+    // ========================================================================
+
+    #[test]
+    fn test_redact_empty() {
+        assert_eq!(redact(""), "");
+    }
+
+    #[test]
+    fn test_redact_single_char() {
+        assert_eq!(redact("x"), "*");
+    }
+
+    #[test]
+    fn test_redact_eleven_chars() {
+        // Just over the 10-char threshold
+        let result = redact("12345678901");
+        assert!(result.contains("..."));
+        assert!(result.starts_with('1'));
+        assert!(result.ends_with('1'));
+    }
+
+    #[test]
+    fn test_redact_unicode() {
+        // Unicode characters should be counted correctly
+        let result = redact("hello");
+        assert_eq!(result, "*****");
+    }
+
+    #[test]
+    fn test_redact_unicode_long() {
+        // Long unicode string
+        let result = redact("abcdefghijklmnopqrstuvwxyz");
+        assert!(result.contains("..."));
+    }
+
+    // ========================================================================
+    // PLACEHOLDER DATABASE URI TESTS
+    // ========================================================================
+
+    #[test]
+    fn test_is_placeholder_database_uri_password() {
+        assert!(is_placeholder("postgres://user:password@localhost/db"));
+        assert!(is_placeholder("mysql://admin:secret@host/db"));
+        assert!(is_placeholder("mongodb://root:pass@server/db"));
+    }
+
+    #[test]
+    fn test_is_placeholder_database_uri_same_creds() {
+        assert!(is_placeholder("postgres://user:user@localhost/db"));
+        assert!(is_placeholder("mongodb://admin:admin@server/db"));
+        assert!(is_placeholder("mysql://root:root@host/db"));
+    }
+
+    #[test]
+    fn test_is_placeholder_example_domain() {
+        assert!(is_placeholder("user@example.com"));
+        assert!(is_placeholder("admin@example.org"));
+    }
+
+    #[test]
+    fn test_is_not_placeholder_real_database_uri() {
+        // Real-looking credentials should NOT be placeholders
+        assert!(!is_placeholder("postgres://myuser:XkJ9#mP2@db.server.com/production"));
+        assert!(!is_placeholder("mongodb://app:S3cr3tP@ssw0rd@cluster.mongodb.net/mydb"));
+    }
+
+    // ========================================================================
+    // PREFIX DETECTOR WORD BOUNDARY TESTS
+    // ========================================================================
+
+    #[test]
+    fn test_detect_prefix_word_boundary_middle() {
+        let scanner = make_test_scanner();
+        // Should NOT match "rSK..." when looking for "SK" prefix
+        // The r before SK makes it not a word boundary
+        let line = "randomrSK1234567890abcdefghij";
+        let result = scanner.detect_prefix(line, "SK", 20, Charset::AlphaNum);
+        assert!(result.is_none(), "Should not match SK when preceded by alphanumeric");
+    }
+
+    #[test]
+    fn test_detect_prefix_word_boundary_after_special() {
+        let scanner = make_test_scanner();
+        // SHOULD match when prefix follows non-alphanumeric
+        let line = "key=SK1234567890abcdefghij";
+        let result = scanner.detect_prefix(line, "SK", 20, Charset::AlphaNum);
+        assert!(result.is_some(), "Should match SK when preceded by =");
+    }
+
+    #[test]
+    fn test_detect_prefix_multiple_candidates() {
+        let scanner = make_test_scanner();
+        // First occurrence is invalid (preceded by alpha), second is valid
+        let line = "xSK_short SK1234567890abcdefghij";
+        let result = scanner.detect_prefix(line, "SK", 20, Charset::AlphaNum);
+        assert!(result.is_some());
+        let (matched, pos) = result.unwrap();
+        assert_eq!(pos, 10); // Should be at position of second SK
+        assert_eq!(matched.len(), 22);
+    }
+
+    // ========================================================================
+    // DETECT METHOD DISPATCH TESTS
+    // ========================================================================
+
+    #[test]
+    fn test_detect_dispatches_to_prefix() {
+        let scanner = make_test_scanner();
+        let detector = Detector::Prefix {
+            prefix: "ghp_",
+            min_len: 40,
+            charset: Charset::AlphaNum,
+        };
+        let result = scanner.detect(&detector, FAKE_GHP);
+        assert!(result.is_some());
+    }
+
+    #[test]
+    fn test_detect_dispatches_to_keyvalue() {
+        let scanner = make_test_scanner();
+        let detector = Detector::KeyValue {
+            keys: &["API_KEY"],
+            min_value_len: 20,
+        };
+        let line = format!("API_KEY = '{}'", FAKE_SECRET);
+        let result = scanner.detect(&detector, &line);
+        assert!(result.is_some());
+    }
+
+    #[test]
+    fn test_detect_dispatches_to_endpoint() {
+        let scanner = make_test_scanner();
+        let detector = Detector::Endpoint {
+            keys: &["API_URL"],
+            patterns: &[":8080"],
+        };
+        let line = "API_URL = 'http://api.example.com:8080'";
+        let result = scanner.detect(&detector, line);
+        assert!(result.is_some());
+    }
+
+    // ========================================================================
+    // CONTEXT BUILDING EDGE CASES
+    // ========================================================================
+
+    #[test]
+    fn test_build_context_zero_lines() {
+        let scanner = Scanner::new(vec![]).with_context(0);
+        let lines = vec!["line1", "line2", "line3"];
+        let context = scanner.build_context(&lines, 1, "secret", "***");
+
+        // With 0 context lines, should only include the match line
+        assert_eq!(context.len(), 1);
+        assert!(context[0].is_match);
+    }
+
+    #[test]
+    fn test_build_context_single_line_file() {
+        let scanner = Scanner::new(vec![]).with_context(3);
+        let lines = vec!["only_line"];
+        let context = scanner.build_context(&lines, 0, "secret", "***");
+
+        assert_eq!(context.len(), 1);
+        assert!(context[0].is_match);
+    }
+
+    #[test]
+    fn test_build_context_redacts_secret() {
+        let scanner = Scanner::new(vec![]).with_context(1);
+        let lines = vec!["before secret here", "match secret line", "after secret here"];
+        let context = scanner.build_context(&lines, 1, "secret", "[REDACTED]");
+
+        // All lines should have secret replaced
+        for ctx_line in &context {
+            assert!(ctx_line.content.contains("[REDACTED]"));
+            assert!(!ctx_line.content.contains("secret"));
+        }
+    }
+
+    // ========================================================================
+    // DIRECTORY SKIP EDGE CASES
+    // ========================================================================
+
+    #[test]
+    fn test_should_skip_pycache() {
+        let scanner = make_test_scanner();
+        let path = Path::new("/project/__pycache__/module.pyc");
+        assert!(scanner.should_skip(path));
+    }
+
+    #[test]
+    fn test_should_skip_venv() {
+        let scanner = make_test_scanner();
+        let path = Path::new("/project/venv/lib/python");
+        assert!(scanner.should_skip(path));
+    }
+
+    #[test]
+    fn test_should_skip_dot_venv() {
+        let scanner = make_test_scanner();
+        let path = Path::new("/project/.venv/bin/python");
+        assert!(scanner.should_skip(path));
+    }
+
+    #[test]
+    fn test_should_skip_tox() {
+        let scanner = make_test_scanner();
+        let path = Path::new("/project/.tox/py38/lib");
+        assert!(scanner.should_skip(path));
+    }
+
+    #[test]
+    fn test_should_skip_pytest_cache() {
+        let scanner = make_test_scanner();
+        let path = Path::new("/project/.pytest_cache/v/cache");
+        assert!(scanner.should_skip(path));
+    }
+
+    #[test]
+    fn test_should_skip_mypy_cache() {
+        let scanner = make_test_scanner();
+        let path = Path::new("/project/.mypy_cache/3.9");
+        assert!(scanner.should_skip(path));
+    }
+
+    #[test]
+    fn test_should_skip_coverage() {
+        let scanner = make_test_scanner();
+        let path = Path::new("/project/coverage/lcov.info");
+        assert!(scanner.should_skip(path));
+        let path2 = Path::new("/project/.coverage");
+        assert!(scanner.should_skip(path2));
+    }
+
+    #[test]
+    fn test_should_skip_svn() {
+        let scanner = make_test_scanner();
+        let path = Path::new("/project/.svn/entries");
+        assert!(scanner.should_skip(path));
+    }
+
+    #[test]
+    fn test_should_skip_hg() {
+        let scanner = make_test_scanner();
+        let path = Path::new("/project/.hg/store");
+        assert!(scanner.should_skip(path));
+    }
+
+    #[test]
+    fn test_should_skip_build() {
+        let scanner = make_test_scanner();
+        let path = Path::new("/project/build/output.js");
+        assert!(scanner.should_skip(path));
+    }
+
+    #[test]
+    fn test_should_skip_dist() {
+        let scanner = make_test_scanner();
+        let path = Path::new("/project/dist/bundle.js");
+        assert!(scanner.should_skip(path));
+    }
+
+    #[test]
+    fn test_should_skip_target() {
+        let scanner = make_test_scanner();
+        let path = Path::new("/project/target/debug/main");
+        assert!(scanner.should_skip(path));
+    }
+
+    // ========================================================================
+    // BINARY EXTENSION EDGE CASES
+    // ========================================================================
+
+    #[test]
+    fn test_is_binary_fonts() {
+        let scanner = make_test_scanner();
+        assert!(scanner.is_binary_extension(Path::new("font.woff")));
+        assert!(scanner.is_binary_extension(Path::new("font.woff2")));
+        assert!(scanner.is_binary_extension(Path::new("font.ttf")));
+        assert!(scanner.is_binary_extension(Path::new("font.eot")));
+        assert!(scanner.is_binary_extension(Path::new("font.otf")));
+    }
+
+    #[test]
+    fn test_is_binary_video() {
+        let scanner = make_test_scanner();
+        assert!(scanner.is_binary_extension(Path::new("video.mp4")));
+        assert!(scanner.is_binary_extension(Path::new("video.avi")));
+        assert!(scanner.is_binary_extension(Path::new("video.mov")));
+        assert!(scanner.is_binary_extension(Path::new("video.webm")));
+    }
+
+    #[test]
+    fn test_is_binary_audio() {
+        let scanner = make_test_scanner();
+        assert!(scanner.is_binary_extension(Path::new("audio.mp3")));
+        assert!(scanner.is_binary_extension(Path::new("audio.ogg")));
+        assert!(scanner.is_binary_extension(Path::new("audio.wav")));
+    }
+
+    #[test]
+    fn test_is_binary_documents() {
+        let scanner = make_test_scanner();
+        assert!(scanner.is_binary_extension(Path::new("doc.pdf")));
+        assert!(scanner.is_binary_extension(Path::new("doc.doc")));
+        assert!(scanner.is_binary_extension(Path::new("doc.docx")));
+        assert!(scanner.is_binary_extension(Path::new("sheet.xls")));
+        assert!(scanner.is_binary_extension(Path::new("sheet.xlsx")));
+        assert!(scanner.is_binary_extension(Path::new("pres.ppt")));
+        assert!(scanner.is_binary_extension(Path::new("pres.pptx")));
+    }
+
+    #[test]
+    fn test_is_binary_compiled() {
+        let scanner = make_test_scanner();
+        assert!(scanner.is_binary_extension(Path::new("lib.dylib")));
+        assert!(scanner.is_binary_extension(Path::new("obj.o")));
+        assert!(scanner.is_binary_extension(Path::new("lib.a")));
+        assert!(scanner.is_binary_extension(Path::new("module.pyc")));
+        assert!(scanner.is_binary_extension(Path::new("module.pyo")));
+        assert!(scanner.is_binary_extension(Path::new("Class.class")));
+        assert!(scanner.is_binary_extension(Path::new("app.jar")));
+        assert!(scanner.is_binary_extension(Path::new("app.war")));
+        assert!(scanner.is_binary_extension(Path::new("module.wasm")));
+    }
+
+    #[test]
+    fn test_is_binary_databases() {
+        let scanner = make_test_scanner();
+        assert!(scanner.is_binary_extension(Path::new("data.db")));
+        assert!(scanner.is_binary_extension(Path::new("data.sqlite")));
+        assert!(scanner.is_binary_extension(Path::new("data.sqlite3")));
+    }
+
+    #[test]
+    fn test_is_binary_case_insensitive() {
+        let scanner = make_test_scanner();
+        assert!(scanner.is_binary_extension(Path::new("image.PNG")));
+        assert!(scanner.is_binary_extension(Path::new("image.JPG")));
+        assert!(scanner.is_binary_extension(Path::new("archive.ZIP")));
+    }
+
+    #[test]
+    fn test_is_not_binary_text_files() {
+        let scanner = make_test_scanner();
+        assert!(!scanner.is_binary_extension(Path::new("file.txt")));
+        assert!(!scanner.is_binary_extension(Path::new("file.md")));
+        assert!(!scanner.is_binary_extension(Path::new("file.html")));
+        assert!(!scanner.is_binary_extension(Path::new("file.css")));
+        assert!(!scanner.is_binary_extension(Path::new("file.json")));
+        assert!(!scanner.is_binary_extension(Path::new("file.xml")));
+        assert!(!scanner.is_binary_extension(Path::new("file.toml")));
+    }
+
+    #[test]
+    fn test_is_binary_no_extension() {
+        let scanner = make_test_scanner();
+        // Files without extension should not be considered binary by extension
+        assert!(!scanner.is_binary_extension(Path::new("Makefile")));
+        assert!(!scanner.is_binary_extension(Path::new("Dockerfile")));
+        assert!(!scanner.is_binary_extension(Path::new(".gitignore")));
+    }
+
+    // ========================================================================
+    // PLACEHOLDER PATTERN TESTS
+    // ========================================================================
+
+    #[test]
+    fn test_is_placeholder_env_references() {
+        assert!(is_placeholder("process.env.API_KEY"));
+        assert!(is_placeholder("os.getenv('SECRET')"));
+        assert!(is_placeholder("os.environ['TOKEN']"));
+        assert!(is_placeholder("env('DATABASE_URL')"));
+        assert!(is_placeholder("getenv('PASSWORD')"));
+    }
+
+    #[test]
+    fn test_is_placeholder_all_x_patterns() {
+        assert!(is_placeholder("xxx"));
+        assert!(is_placeholder("XXXX"));
+        assert!(is_placeholder("xxxxxxxxxxxxxxxx"));
+        assert!(is_placeholder("XXXXXXXXXXXXXXXX"));
+    }
+
+    #[test]
+    fn test_is_placeholder_your_patterns() {
+        assert!(is_placeholder("your_key"));
+        assert!(is_placeholder("your-key"));
+        assert!(is_placeholder("my_api_key"));
+        assert!(is_placeholder("my-secret"));
+    }
+
+    #[test]
+    fn test_is_placeholder_example_suffix() {
+        assert!(is_placeholder("key_example"));
+        assert!(is_placeholder("token-example"));
+    }
+
+    #[test]
+    fn test_is_placeholder_here_suffix() {
+        assert!(is_placeholder("insert_here"));
+        assert!(is_placeholder("put-here"));
+        assert!(is_placeholder("key_here"));
+    }
+
+    // ========================================================================
+    // ENDPOINT DETECTOR EDGE CASES
+    // ========================================================================
+
+    #[test]
+    fn test_detect_endpoint_skips_placeholder() {
+        let scanner = make_test_scanner();
+        let line = "OLLAMA_HOST = '${OLLAMA_URL}'";
+        let result = scanner.detect_endpoint(line, &["OLLAMA_HOST"], &[":11434"]);
+        assert!(result.is_none(), "Should skip template placeholder");
+    }
+
+    #[test]
+    fn test_detect_endpoint_empty_value() {
+        let scanner = make_test_scanner();
+        let line = "API_URL = ''";
+        let result = scanner.detect_endpoint(line, &["API_URL"], &[":8080"]);
+        assert!(result.is_none(), "Should skip empty values");
+    }
+
+    #[test]
+    fn test_detect_endpoint_json_format() {
+        let scanner = make_test_scanner();
+        let line = r#""api_url": "http://server.internal:8080/v1""#;
+        let result = scanner.detect_endpoint(line, &["api_url"], &[":8080"]);
+        assert!(result.is_some());
+    }
+
+    #[test]
+    fn test_detect_endpoint_pattern_extracts_partial_url() {
+        let scanner = make_test_scanner();
+        // Note: The pattern matching extracts from after the last delimiter (which is `:` before `//`)
+        // So it gets `//ai.internal:11434/api/generate` not the full `http://...`
+        let line = "Using endpoint http://ai.internal:11434/api/generate for inference";
+        let result = scanner.detect_endpoint(line, &[], &[":11434"]);
+        assert!(result.is_some());
+        let (matched, _) = result.unwrap();
+        assert!(matched.contains(":11434"));
+        assert!(matched.contains("ai.internal"));
+    }
+
+    #[test]
+    fn test_detect_endpoint_pattern_at_line_start() {
+        let scanner = make_test_scanner();
+        // When URL is at the start with no delimiters before, extracts from position 0
+        let line = "http://ai.internal:11434/api/generate";
+        let result = scanner.detect_endpoint(line, &[], &[":11434"]);
+        assert!(result.is_some());
+        let (matched, pos) = result.unwrap();
+        // Pattern matching finds :11434 and looks back, finds : before //, starts from there
+        assert!(matched.contains(":11434"));
+        assert!(pos < 10);
+    }
+
+    // ========================================================================
+    // LOOKS LIKE CODE KNOWN TOKEN FORMATS
+    // ========================================================================
+
+    #[test]
+    fn test_looks_like_code_allows_jwt() {
+        // JWT tokens have dots but should not be considered code
+        assert!(!looks_like_code("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"));
+    }
+
+    #[test]
+    fn test_looks_like_code_allows_google_oauth() {
+        // Google OAuth tokens start with ya29.
+        assert!(!looks_like_code("ya29.a0AfH6SMBxxxx"));
+    }
+
+    #[test]
+    fn test_looks_like_code_allows_slack() {
+        // Slack tokens start with xox and may have dots
+        assert!(!looks_like_code("xoxb-123456789"));
     }
 }

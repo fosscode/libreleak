@@ -9,6 +9,7 @@ use std::fs::{self, File};
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::process::Output;
 
 /// A temporary test directory that cleans up after itself
 pub struct TestDir {
@@ -63,28 +64,44 @@ pub struct TestGitRepo {
 }
 
 impl TestGitRepo {
+    fn git(dir: &Path, args: &[&str]) -> Output {
+        Command::new("git")
+            .args(args)
+            .current_dir(dir)
+            .output()
+            .expect("Failed to run git command")
+    }
+
+    fn git_checked(dir: &Path, args: &[&str]) {
+        let out = Self::git(dir, args);
+        if !out.status.success() {
+            panic!(
+                "git {:?} failed:\nstdout:\n{}\nstderr:\n{}",
+                args,
+                String::from_utf8_lossy(&out.stdout),
+                String::from_utf8_lossy(&out.stderr)
+            );
+        }
+    }
+
     pub fn new(name: &str) -> Self {
         let dir = TestDir::new(name);
 
-        // Initialize git repo with 'main' as default branch
-        Command::new("git")
-            .args(["init", "-b", "main"])
-            .current_dir(dir.path())
-            .output()
-            .expect("Failed to init git repo");
+        // Initialize git repo and ensure 'main' exists/checked out.
+        // Use only widely-supported flags to avoid git-version issues.
+        Self::git_checked(dir.path(), &["init"]);
+        Self::git_checked(dir.path(), &["checkout", "-B", "main"]);
 
         // Configure git user for commits
-        Command::new("git")
-            .args(["config", "user.email", "test@libreleak.local"])
-            .current_dir(dir.path())
-            .output()
-            .unwrap();
-
-        Command::new("git")
-            .args(["config", "user.name", "Test User"])
-            .current_dir(dir.path())
-            .output()
-            .unwrap();
+        Self::git_checked(
+            dir.path(),
+            &["config", "user.email", "test@libreleak.local"],
+        );
+        Self::git_checked(dir.path(), &["config", "user.name", "Test User"]);
+        // Avoid environment-specific failures (e.g., mandatory GPG signing or global hook paths).
+        Self::git_checked(dir.path(), &["config", "commit.gpgsign", "false"]);
+        Self::git_checked(dir.path(), &["config", "tag.gpgsign", "false"]);
+        Self::git_checked(dir.path(), &["config", "core.hooksPath", ".git/hooks"]);
 
         Self { dir }
     }
@@ -102,33 +119,20 @@ impl TestGitRepo {
     }
 
     pub fn commit(&self, message: &str) {
-        Command::new("git")
-            .args(["add", "-A"])
-            .current_dir(self.path())
-            .output()
-            .unwrap();
-
-        Command::new("git")
-            .args(["commit", "-m", message, "--allow-empty"])
-            .current_dir(self.path())
-            .output()
-            .unwrap();
+        Self::git_checked(self.path(), &["add", "-A"]);
+        // Disable signing even if the user's global git config enforces it.
+        Self::git_checked(
+            self.path(),
+            &["commit", "--no-gpg-sign", "-m", message, "--allow-empty"],
+        );
     }
 
     pub fn create_branch(&self, name: &str) {
-        Command::new("git")
-            .args(["checkout", "-b", name])
-            .current_dir(self.path())
-            .output()
-            .unwrap();
+        Self::git_checked(self.path(), &["checkout", "-B", name]);
     }
 
     pub fn checkout(&self, branch: &str) {
-        Command::new("git")
-            .args(["checkout", branch])
-            .current_dir(self.path())
-            .output()
-            .unwrap();
+        Self::git_checked(self.path(), &["checkout", branch]);
     }
 
     pub fn delete_file(&self, name: &str) {

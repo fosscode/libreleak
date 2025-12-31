@@ -9,12 +9,18 @@ mod common;
 
 use common::fake_secrets::*;
 use common::{TestDir, TestGitRepo};
+use std::sync::{Mutex, OnceLock};
 
 // ============================================================================
 // TEST HELPERS
 // ============================================================================
 
+static CARGO_RUN_LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+
 fn run_scan(path: &str) -> (String, i32) {
+    let lock = CARGO_RUN_LOCK.get_or_init(|| Mutex::new(()));
+    let _guard = lock.lock().expect("Failed to lock cargo run mutex");
+
     let output = std::process::Command::new("cargo")
         .args(["run", "--", path, "--no-context"])
         .output()
@@ -28,6 +34,9 @@ fn run_scan(path: &str) -> (String, i32) {
 }
 
 fn run_scan_json(path: &str) -> String {
+    let lock = CARGO_RUN_LOCK.get_or_init(|| Mutex::new(()));
+    let _guard = lock.lock().expect("Failed to lock cargo run mutex");
+
     let output = std::process::Command::new("cargo")
         .args(["run", "--", path, "-f", "json"])
         .output()
@@ -1921,6 +1930,9 @@ fn test_sarif_output_format() {
     let dir = TestDir::new("sarif-output");
     dir.write_file("config.py", &format!("KEY = '{}'", OPENAI_API_KEY));
 
+    let lock = CARGO_RUN_LOCK.get_or_init(|| Mutex::new(()));
+    let _guard = lock.lock().expect("Failed to lock cargo run mutex");
+
     let output = std::process::Command::new("cargo")
         .args(["run", "--", dir.path_str(), "-f", "sarif"])
         .output()
@@ -1944,6 +1956,9 @@ fn test_fail_on_leak_exit_code() {
     let dir = TestDir::new("fail-on-leak");
     dir.write_file("config.py", &format!("KEY = '{}'", OPENAI_API_KEY));
 
+    let lock = CARGO_RUN_LOCK.get_or_init(|| Mutex::new(()));
+    let _guard = lock.lock().expect("Failed to lock cargo run mutex");
+
     let output = std::process::Command::new("cargo")
         .args(["run", "--", dir.path_str(), "--fail-on-leak"])
         .output()
@@ -1960,6 +1975,9 @@ fn test_fail_on_leak_exit_code() {
 fn test_no_secrets_exit_code() {
     let dir = TestDir::new("no-secrets");
     dir.write_file("clean.py", "print('hello')");
+
+    let lock = CARGO_RUN_LOCK.get_or_init(|| Mutex::new(()));
+    let _guard = lock.lock().expect("Failed to lock cargo run mutex");
 
     let output = std::process::Command::new("cargo")
         .args(["run", "--", dir.path_str(), "--fail-on-leak"])
@@ -1981,6 +1999,9 @@ fn test_rule_filtering_only() {
         &format!("OPENAI = '{}'\nGITHUB = '{}'", OPENAI_API_KEY, GITHUB_PAT),
     );
 
+    let lock = CARGO_RUN_LOCK.get_or_init(|| Mutex::new(()));
+    let _guard = lock.lock().expect("Failed to lock cargo run mutex");
+
     let output = std::process::Command::new("cargo")
         .args(["run", "--", dir.path_str(), "--only", "github-pat"])
         .output()
@@ -2001,6 +2022,9 @@ fn test_rule_filtering_exclude() {
         "config.py",
         &format!("OPENAI = '{}'\nGITHUB = '{}'", OPENAI_API_KEY, GITHUB_PAT),
     );
+
+    let lock = CARGO_RUN_LOCK.get_or_init(|| Mutex::new(()));
+    let _guard = lock.lock().expect("Failed to lock cargo run mutex");
 
     let output = std::process::Command::new("cargo")
         .args(["run", "--", dir.path_str(), "--exclude", "openai-api-key"])
@@ -2373,5 +2397,1278 @@ fake = "planetscale_password"  # Wrong format
     assert!(
         !should_detect(&output, "planetscale-password"),
         "Should not detect invalid PlanetScale tokens"
+    );
+}
+
+// ============================================================================
+// EDGE CASE TESTS - FILE BOUNDARIES
+// ============================================================================
+
+#[test]
+fn test_secret_at_first_line_of_file() {
+    let dir = TestDir::new("first-line-secret");
+    // Secret is the very first content in the file (no leading newline)
+    dir.write_file("config.py", &format!("{}=KEY", OPENAI_API_KEY));
+
+    let (output, _) = run_scan(dir.path_str());
+    assert!(
+        should_detect_sk_token(&output),
+        "Should detect secret at first line of file"
+    );
+}
+
+#[test]
+fn test_secret_at_last_line_no_newline() {
+    let dir = TestDir::new("last-line-no-newline");
+    // Secret at last line without trailing newline
+    let content = format!("# some comment\nKEY={}", GITHUB_PAT);
+    dir.write_file("config.txt", &content);
+
+    let (output, _) = run_scan(dir.path_str());
+    assert!(
+        should_detect(&output, "github-pat"),
+        "Should detect secret at last line without trailing newline"
+    );
+}
+
+#[test]
+fn test_secret_only_content_in_file() {
+    let dir = TestDir::new("secret-only-file");
+    // File contains only the secret, nothing else
+    dir.write_file("token.txt", GITHUB_PAT);
+
+    let (output, _) = run_scan(dir.path_str());
+    assert!(
+        should_detect(&output, "github-pat"),
+        "Should detect secret when it's the only content in file"
+    );
+}
+
+#[test]
+fn test_secret_at_exact_byte_boundary() {
+    let dir = TestDir::new("byte-boundary");
+    // Create content where secret starts at a "round" byte boundary (1024 bytes)
+    let padding = "x".repeat(1024);
+    let content = format!("{}\n{}", padding, OPENAI_API_KEY);
+    dir.write_file("padded.txt", &content);
+
+    let (output, _) = run_scan(dir.path_str());
+    assert!(
+        should_detect_sk_token(&output),
+        "Should detect secret at byte boundary"
+    );
+}
+
+// ============================================================================
+// EDGE CASE TESTS - MIXED ENCODINGS AND SPECIAL CHARACTERS
+// ============================================================================
+
+#[test]
+fn test_secret_with_utf8_bom() {
+    let dir = TestDir::new("utf8-bom");
+    // UTF-8 BOM followed by secret
+    let content = format!("\u{FEFF}KEY={}", OPENAI_API_KEY);
+    dir.write_file("config.txt", &content);
+
+    let (output, _) = run_scan(dir.path_str());
+    assert!(
+        should_detect_sk_token(&output),
+        "Should detect secret in file with UTF-8 BOM"
+    );
+}
+
+#[test]
+fn test_secret_surrounded_by_unicode() {
+    let dir = TestDir::new("unicode-surrounded");
+    let content = format!(
+        "# Configuration (设置) 🔐\nAPI_KEY={}\n# 密钥已设置 ✓",
+        GITHUB_PAT
+    );
+    dir.write_file("config.py", &content);
+
+    let (output, _) = run_scan(dir.path_str());
+    assert!(
+        should_detect(&output, "github-pat"),
+        "Should detect secret surrounded by unicode characters"
+    );
+}
+
+#[test]
+fn test_secret_with_windows_line_endings() {
+    let dir = TestDir::new("windows-crlf");
+    // Windows-style CRLF line endings
+    let content = format!("# Config\r\nKEY={}\r\nOTHER=value\r\n", OPENAI_API_KEY);
+    dir.write_file("config.txt", &content);
+
+    let (output, _) = run_scan(dir.path_str());
+    assert!(
+        should_detect_sk_token(&output),
+        "Should detect secret with Windows line endings"
+    );
+}
+
+#[test]
+fn test_secret_with_mixed_line_endings() {
+    let dir = TestDir::new("mixed-endings");
+    // Mixed line endings (LF, CRLF, CR)
+    let content = format!("line1\nKEY={}\r\nline3\rline4", GITHUB_PAT);
+    dir.write_file("messy.txt", &content);
+
+    let (output, _) = run_scan(dir.path_str());
+    assert!(
+        should_detect(&output, "github-pat"),
+        "Should detect secret with mixed line endings"
+    );
+}
+
+#[test]
+fn test_secret_with_null_bytes_nearby() {
+    let dir = TestDir::new("null-bytes");
+    // Content with null bytes (which might indicate binary, but let's test text with embedded nulls)
+    let content = format!("header\x00trailer\nKEY={}\nfooter", OPENAI_API_KEY);
+    dir.write_file("weird.txt", &content);
+
+    let (output, _) = run_scan(dir.path_str());
+    // This might be skipped as binary, or detected - either is acceptable behavior
+    // We're testing that the scanner doesn't crash
+    let _ = output; // Just ensure we got a result
+}
+
+// ============================================================================
+// EDGE CASE TESTS - MINIFIED/COMPRESSED SINGLE-LINE FILES
+// ============================================================================
+
+#[test]
+fn test_secret_in_minified_js_no_spaces() {
+    let dir = TestDir::new("minified-no-spaces");
+    let content = format!(
+        r#"var a="{}",b="{}",c=function(){{return a+b}},d={{}},e=[];"#,
+        OPENAI_API_KEY, GITHUB_PAT
+    );
+    dir.write_file("app.min.js", &content);
+
+    let (output, _) = run_scan(dir.path_str());
+    assert!(
+        count_findings(&output) >= 2,
+        "Should detect multiple secrets in minified JS"
+    );
+}
+
+#[test]
+fn test_secret_in_very_long_single_line() {
+    let dir = TestDir::new("very-long-single-line");
+    // Create a 50KB single line with secret buried in the middle
+    let padding_before = "x".repeat(25000);
+    let padding_after = "y".repeat(25000);
+    let content = format!(
+        "const data = '{}SECRET={}{}';",
+        padding_before, OPENAI_API_KEY, padding_after
+    );
+    dir.write_file("huge-line.js", &content);
+
+    let (output, _) = run_scan(dir.path_str());
+    assert!(
+        should_detect_sk_token(&output),
+        "Should detect secret in very long single line"
+    );
+}
+
+#[test]
+fn test_secret_in_minified_css_like() {
+    let dir = TestDir::new("minified-css-like");
+    // Minified content with secrets embedded (unusual but possible in build artifacts)
+    let content = format!(
+        ".a{{background:url(//api.example.com?key={})}}.b{{color:red}}",
+        GOOGLE_API_KEY
+    );
+    dir.write_file("style.min.css", &content);
+
+    let (output, _) = run_scan(dir.path_str());
+    assert!(
+        should_detect_gemini_token(&output) || should_detect(&output, "gcp-api-key"),
+        "Should detect secret in minified CSS-like content"
+    );
+}
+
+#[test]
+fn test_multiple_secrets_in_json_one_line() {
+    let dir = TestDir::new("json-one-line");
+    let content = format!(
+        r#"{{"openai":"{}","github":"{}","aws":"{}"}}"#,
+        OPENAI_API_KEY, GITHUB_PAT, AWS_ACCESS_KEY_ID
+    );
+    dir.write_file("config.min.json", &content);
+
+    let (output, _) = run_scan(dir.path_str());
+    assert!(
+        count_findings(&output) >= 3,
+        "Should detect multiple secrets in single-line JSON"
+    );
+}
+
+// ============================================================================
+// EDGE CASE TESTS - UNUSUAL QUOTING STYLES
+// ============================================================================
+
+#[test]
+fn test_secret_with_escaped_quotes() {
+    let dir = TestDir::new("escaped-quotes");
+    let content = format!(
+        r#"const key = "API_KEY=\"{}\"";
+const nested = 'token=\'{}\'';
+"#,
+        OPENAI_API_KEY, GITHUB_PAT
+    );
+    dir.write_file("escaped.js", &content);
+
+    let (output, _) = run_scan(dir.path_str());
+    assert!(
+        count_findings(&output) >= 2,
+        "Should detect secrets with escaped quotes"
+    );
+}
+
+#[test]
+fn test_secret_in_template_literal() {
+    let dir = TestDir::new("template-literal");
+    let content = format!(
+        "const config = `\napi_key: {}\ntoken: {}\n`;",
+        OPENAI_API_KEY, GITHUB_PAT
+    );
+    dir.write_file("template.js", &content);
+
+    let (output, _) = run_scan(dir.path_str());
+    assert!(
+        count_findings(&output) >= 2,
+        "Should detect secrets in template literals"
+    );
+}
+
+#[test]
+fn test_secret_in_backtick_string() {
+    let dir = TestDir::new("backtick-string");
+    let content = format!(
+        "const url = `https://api.example.com?key={}&token=${{process.env.OTHER}}`;",
+        OPENAI_API_KEY
+    );
+    dir.write_file("backtick.js", &content);
+
+    let (output, _) = run_scan(dir.path_str());
+    assert!(
+        should_detect_sk_token(&output),
+        "Should detect secret in backtick string"
+    );
+}
+
+#[test]
+fn test_secret_with_mixed_quote_types() {
+    let dir = TestDir::new("mixed-quotes");
+    let content = format!(
+        r#"single = '{}'
+double = "{}"
+backtick = `{}`
+no_quotes = {}"#,
+        OPENAI_API_KEY, GITHUB_PAT, AWS_ACCESS_KEY_ID, ANTHROPIC_API_KEY
+    );
+    dir.write_file("quotes.py", &content);
+
+    let (output, _) = run_scan(dir.path_str());
+    assert!(
+        count_findings(&output) >= 4,
+        "Should detect secrets with all quote types"
+    );
+}
+
+#[test]
+fn test_secret_with_triple_quotes() {
+    let dir = TestDir::new("triple-quotes");
+    let content = format!(
+        r#"KEY = """{}"""
+TOKEN = '''{}'''"#,
+        OPENAI_API_KEY, GITHUB_PAT
+    );
+    dir.write_file("triple.py", &content);
+
+    let (output, _) = run_scan(dir.path_str());
+    assert!(
+        count_findings(&output) >= 2,
+        "Should detect secrets in triple-quoted strings"
+    );
+}
+
+// ============================================================================
+// EDGE CASE TESTS - HEREDOCS AND MULTI-LINE STRINGS
+// ============================================================================
+
+#[test]
+fn test_secret_in_bash_heredoc() {
+    let dir = TestDir::new("bash-heredoc");
+    let content = format!(
+        r#"#!/bin/bash
+cat <<'EOF' > config.env
+OPENAI_API_KEY={}
+GITHUB_TOKEN={}
+EOF
+"#,
+        OPENAI_API_KEY, GITHUB_PAT
+    );
+    dir.write_file("setup.sh", &content);
+
+    let (output, _) = run_scan(dir.path_str());
+    assert!(
+        count_findings(&output) >= 2,
+        "Should detect secrets in bash heredoc"
+    );
+}
+
+#[test]
+fn test_secret_in_ruby_heredoc() {
+    let dir = TestDir::new("ruby-heredoc");
+    let content = format!(
+        r#"config = <<~YAML
+  api_key: {}
+  token: {}
+YAML
+"#,
+        OPENAI_API_KEY, GITHUB_PAT
+    );
+    dir.write_file("config.rb", &content);
+
+    let (output, _) = run_scan(dir.path_str());
+    assert!(
+        count_findings(&output) >= 2,
+        "Should detect secrets in Ruby heredoc"
+    );
+}
+
+#[test]
+fn test_secret_in_python_multiline_string() {
+    let dir = TestDir::new("python-multiline");
+    let content = format!(
+        r#"config = """
+# API Configuration
+api_key: {}
+token: {}
+"""
+"#,
+        OPENAI_API_KEY, GITHUB_PAT
+    );
+    dir.write_file("config.py", &content);
+
+    let (output, _) = run_scan(dir.path_str());
+    assert!(
+        count_findings(&output) >= 2,
+        "Should detect secrets in Python multi-line string"
+    );
+}
+
+#[test]
+fn test_secret_in_go_raw_string() {
+    let dir = TestDir::new("go-raw-string");
+    let content = format!(
+        "const config = `api_key={}\ntoken={}`",
+        OPENAI_API_KEY, GITHUB_PAT
+    );
+    dir.write_file("config.go", &content);
+
+    let (output, _) = run_scan(dir.path_str());
+    assert!(
+        count_findings(&output) >= 2,
+        "Should detect secrets in Go raw string literal"
+    );
+}
+
+#[test]
+fn test_secret_in_php_heredoc() {
+    let dir = TestDir::new("php-heredoc");
+    let content = format!(
+        r#"<?php
+$config = <<<EOT
+api_key={}
+token={}
+EOT;
+"#,
+        OPENAI_API_KEY, GITHUB_PAT
+    );
+    dir.write_file("config.php", &content);
+
+    let (output, _) = run_scan(dir.path_str());
+    assert!(
+        count_findings(&output) >= 2,
+        "Should detect secrets in PHP heredoc"
+    );
+}
+
+// ============================================================================
+// FALSE POSITIVE RESISTANCE TESTS
+// ============================================================================
+
+#[test]
+fn test_false_positive_placeholder_patterns() {
+    let dir = TestDir::new("placeholder-patterns");
+    dir.write_file(
+        "config.py",
+        r#"
+# Common placeholder patterns that should NOT trigger
+API_KEY = "your-api-key-here"
+TOKEN = "INSERT_YOUR_TOKEN"
+SECRET = "xxx-xxxx-xxxx-xxxx"
+PASSWORD = "changeme"
+KEY = "<API_KEY>"
+OPENAI = "sk-..."
+AWS_KEY = "AKIAXXXXXXXXXXXXXXXX"
+GITHUB = "ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+"#,
+    );
+
+    let (output, _) = run_scan(dir.path_str());
+    // Placeholder patterns should not trigger many findings
+    let findings = count_findings(&output);
+    assert!(
+        findings <= 2,
+        "Should have minimal false positives from placeholders, found: {}",
+        findings
+    );
+}
+
+#[test]
+fn test_false_positive_test_mock_values() {
+    let dir = TestDir::new("test-mocks");
+    dir.write_file(
+        "test_api.py",
+        r#"
+# Mock/test values that look like secrets but aren't
+TEST_API_KEY = "test_key_12345"
+MOCK_TOKEN = "mock_token_abcdef"
+FAKE_SECRET = "fake_secret_for_testing"
+DUMMY_PASSWORD = "dummy_pass_123"
+SAMPLE_KEY = "sample_api_key_here"
+"#,
+    );
+
+    let (output, _) = run_scan(dir.path_str());
+    let findings = count_findings(&output);
+    assert!(
+        findings <= 1,
+        "Should have minimal false positives from test/mock values, found: {}",
+        findings
+    );
+}
+
+#[test]
+fn test_false_positive_example_documentation() {
+    let dir = TestDir::new("example-docs");
+    dir.write_file(
+        "API.md",
+        r#"
+# API Documentation
+
+## Authentication
+
+Use your API key in the Authorization header:
+
+```bash
+curl -H "Authorization: Bearer sk-your-key-here" https://api.example.com
+```
+
+Example with environment variable:
+```python
+api_key = os.getenv("OPENAI_API_KEY", "sk-example-key")
+```
+
+Note: Replace `sk-your-key-here` with your actual API key.
+"#,
+    );
+
+    let (output, _) = run_scan(dir.path_str());
+    let findings = count_findings(&output);
+    assert!(
+        findings <= 2,
+        "Should have minimal false positives from documentation examples, found: {}",
+        findings
+    );
+}
+
+#[test]
+fn test_false_positive_environment_variable_refs() {
+    let dir = TestDir::new("env-refs");
+    dir.write_file(
+        "config.py",
+        r#"
+# These reference environment variables, not actual secrets
+OPENAI_KEY = os.environ["OPENAI_API_KEY"]
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
+AWS_KEY = process.env.AWS_ACCESS_KEY_ID
+DB_URL = ${DATABASE_URL}
+SECRET = {{SECRET_KEY}}
+"#,
+    );
+
+    let (output, _) = run_scan(dir.path_str());
+    let findings = count_findings(&output);
+    assert!(
+        findings <= 1,
+        "Should not detect environment variable references as secrets, found: {}",
+        findings
+    );
+}
+
+#[test]
+fn test_false_positive_uuid_like_strings() {
+    let dir = TestDir::new("uuid-strings");
+    dir.write_file(
+        "ids.txt",
+        r#"
+# UUIDs and similar patterns that might look like secrets
+user_id = "550e8400-e29b-41d4-a716-446655440000"
+session_id = "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+correlation_id = "123e4567-e89b-12d3-a456-426614174000"
+trace_id = "0123456789abcdef0123456789abcdef"
+"#,
+    );
+
+    let (output, _) = run_scan(dir.path_str());
+    let findings = count_findings(&output);
+    assert!(
+        findings == 0,
+        "Should not detect UUIDs as secrets, found: {}",
+        findings
+    );
+}
+
+#[test]
+fn test_false_positive_hash_strings() {
+    let dir = TestDir::new("hash-strings");
+    dir.write_file(
+        "hashes.txt",
+        r#"
+# Hash values that should not be detected as secrets
+md5_hash = "d41d8cd98f00b204e9800998ecf8427e"
+sha1_hash = "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+sha256_hash = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+git_commit = "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0"
+"#,
+    );
+
+    let (output, _) = run_scan(dir.path_str());
+    let findings = count_findings(&output);
+    assert!(
+        findings <= 1,
+        "Should have minimal false positives from hash values, found: {}",
+        findings
+    );
+}
+
+// ============================================================================
+// EDGE CASE TESTS - SECRETS PARTIALLY OBSCURED BY COMMENTS
+// ============================================================================
+
+#[test]
+fn test_secret_after_inline_comment() {
+    let dir = TestDir::new("inline-comment-secret");
+    let content = format!(
+        r#"// api_key = "{}"
+# github_token = '{}'
+/* aws_key = {} */"#,
+        OPENAI_API_KEY, GITHUB_PAT, AWS_ACCESS_KEY_ID
+    );
+    dir.write_file("commented.txt", &content);
+
+    let (output, _) = run_scan(dir.path_str());
+    // Secrets in comments should still be detected (they're still exposed!)
+    assert!(
+        count_findings(&output) >= 2,
+        "Should detect secrets in commented-out code"
+    );
+}
+
+#[test]
+fn test_secret_with_comment_on_same_line() {
+    let dir = TestDir::new("same-line-comment");
+    let content = format!(
+        r#"KEY = "{}" # This is the API key
+TOKEN = '{}' // GitHub token here"#,
+        OPENAI_API_KEY, GITHUB_PAT
+    );
+    dir.write_file("config.py", &content);
+
+    let (output, _) = run_scan(dir.path_str());
+    assert!(
+        count_findings(&output) >= 2,
+        "Should detect secrets with trailing comments"
+    );
+}
+
+#[test]
+fn test_secret_in_block_comment() {
+    let dir = TestDir::new("block-comment-secret");
+    let content = format!(
+        r#"/*
+ * Old credentials (do not use):
+ * API_KEY: {}
+ * TOKEN: {}
+ */"#,
+        OPENAI_API_KEY, GITHUB_PAT
+    );
+    dir.write_file("legacy.js", &content);
+
+    let (output, _) = run_scan(dir.path_str());
+    assert!(
+        count_findings(&output) >= 2,
+        "Should detect secrets in block comments"
+    );
+}
+
+#[test]
+fn test_secret_in_html_comment() {
+    let dir = TestDir::new("html-comment-secret");
+    let content = format!(
+        r#"<!DOCTYPE html>
+<!-- Debug: API_KEY={} -->
+<html>
+<!-- Old token: {} -->
+</html>"#,
+        OPENAI_API_KEY, GITHUB_PAT
+    );
+    dir.write_file("index.html", &content);
+
+    let (output, _) = run_scan(dir.path_str());
+    assert!(
+        count_findings(&output) >= 2,
+        "Should detect secrets in HTML comments"
+    );
+}
+
+#[test]
+fn test_secret_in_xml_comment() {
+    let dir = TestDir::new("xml-comment-secret");
+    let content = format!(
+        r#"<?xml version="1.0"?>
+<!-- API Key: {} -->
+<config>
+  <!-- Token: {} -->
+</config>"#,
+        OPENAI_API_KEY, GITHUB_PAT
+    );
+    dir.write_file("config.xml", &content);
+
+    let (output, _) = run_scan(dir.path_str());
+    assert!(
+        count_findings(&output) >= 2,
+        "Should detect secrets in XML comments"
+    );
+}
+
+#[test]
+fn test_secret_partially_hidden_by_todo() {
+    let dir = TestDir::new("todo-comment-secret");
+    let content = format!(
+        r#"# TODO: Rotate this key: {}
+# FIXME: Remove hardcoded token: {}
+# XXX: Temporary AWS key: {}"#,
+        OPENAI_API_KEY, GITHUB_PAT, AWS_ACCESS_KEY_ID
+    );
+    dir.write_file("todo.py", &content);
+
+    let (output, _) = run_scan(dir.path_str());
+    assert!(
+        count_findings(&output) >= 3,
+        "Should detect secrets in TODO/FIXME comments"
+    );
+}
+
+// ============================================================================
+// EDGE CASE TESTS - ADDITIONAL BOUNDARY CONDITIONS
+// ============================================================================
+
+#[test]
+fn test_empty_file_handling() {
+    let dir = TestDir::new("empty-file");
+    dir.write_file("empty.txt", "");
+
+    let (output, exit_code) = run_scan(dir.path_str());
+    // Should handle empty files gracefully
+    assert!(
+        exit_code == 0,
+        "Should handle empty files without error"
+    );
+    assert!(
+        count_findings(&output) == 0,
+        "Empty file should have no findings"
+    );
+}
+
+#[test]
+fn test_whitespace_only_file() {
+    let dir = TestDir::new("whitespace-file");
+    dir.write_file("spaces.txt", "   \n\t\n   \n");
+
+    let (output, exit_code) = run_scan(dir.path_str());
+    assert!(
+        exit_code == 0,
+        "Should handle whitespace-only files without error"
+    );
+    assert!(
+        count_findings(&output) == 0,
+        "Whitespace-only file should have no findings"
+    );
+}
+
+#[test]
+fn test_secret_adjacent_to_special_chars() {
+    let dir = TestDir::new("special-char-adjacent");
+    let content = format!(
+        r#"key1={}|key2={}
+array=[{},{}]
+obj={{"a":"{}","b":"{}"}}"#,
+        OPENAI_API_KEY, GITHUB_PAT, OPENAI_API_KEY, GITHUB_PAT, AWS_ACCESS_KEY_ID, ANTHROPIC_API_KEY
+    );
+    dir.write_file("special.txt", &content);
+
+    let (output, _) = run_scan(dir.path_str());
+    assert!(
+        count_findings(&output) >= 4,
+        "Should detect secrets adjacent to special characters"
+    );
+}
+
+#[test]
+fn test_secret_in_url_query_param() {
+    let dir = TestDir::new("url-query-secret");
+    let content = format!(
+        r#"const url = "https://api.example.com?api_key={}&token={}";
+const img = "https://cdn.example.com/image.png?auth={}";"#,
+        OPENAI_API_KEY, GITHUB_PAT, AWS_ACCESS_KEY_ID
+    );
+    dir.write_file("urls.js", &content);
+
+    let (output, _) = run_scan(dir.path_str());
+    assert!(
+        count_findings(&output) >= 3,
+        "Should detect secrets in URL query parameters"
+    );
+}
+
+#[test]
+fn test_secret_in_base64_context() {
+    let dir = TestDir::new("base64-context");
+    // Not actually base64 encoded, but in a context that suggests base64
+    let content = format!(
+        r#"Authorization: Basic {}
+X-API-Key: {}"#,
+        OPENAI_API_KEY, GITHUB_PAT
+    );
+    dir.write_file("headers.txt", &content);
+
+    let (output, _) = run_scan(dir.path_str());
+    assert!(
+        count_findings(&output) >= 2,
+        "Should detect secrets in authorization header context"
+    );
+}
+
+#[test]
+fn test_many_secrets_same_file() {
+    let dir = TestDir::new("many-secrets");
+    let content = format!(
+        r#"OPENAI_KEY={}
+GITHUB_TOKEN={}
+AWS_KEY={}
+ANTHROPIC_KEY={}
+STRIPE_KEY={}
+SENDGRID_KEY={}
+SLACK_TOKEN={}
+NPM_TOKEN={}"#,
+        OPENAI_API_KEY,
+        GITHUB_PAT,
+        AWS_ACCESS_KEY_ID,
+        ANTHROPIC_API_KEY,
+        STRIPE_SECRET_KEY,
+        SENDGRID_API_KEY,
+        SLACK_BOT_TOKEN,
+        NPM_TOKEN
+    );
+    dir.write_file("secrets.env", &content);
+
+    let (output, _) = run_scan(dir.path_str());
+    assert!(
+        count_findings(&output) >= 8,
+        "Should detect many secrets in same file, found: {}",
+        count_findings(&output)
+    );
+}
+
+// ============================================================================
+// PERFORMANCE AND STRESS TESTS
+// ============================================================================
+// These tests verify the scanner handles large files, many files, and
+// edge cases without crashing or taking excessive time/memory.
+// Use `cargo test -- --ignored` to run these tests.
+
+/// Test scanning a file with 10,000+ lines
+#[test]
+#[ignore] // Slow test - run with `cargo test -- --ignored`
+fn test_performance_large_file_10k_lines() {
+    let dir = TestDir::new("perf-large-file");
+
+    // Generate a 10,000+ line file with secrets scattered throughout
+    let mut content = String::with_capacity(500_000);
+    for i in 0..10_500 {
+        if i % 1000 == 0 {
+            // Insert a secret every 1000 lines
+            content.push_str(&format!("OPENAI_API_KEY={}\n", OPENAI_API_KEY));
+        } else if i % 500 == 0 {
+            content.push_str(&format!("GITHUB_TOKEN={}\n", GITHUB_PAT));
+        } else {
+            // Regular code lines
+            content.push_str(&format!(
+                "const variable_{} = 'some_value_{}'; // line {}\n",
+                i, i, i
+            ));
+        }
+    }
+    dir.write_file("large_config.js", &content);
+
+    let start = std::time::Instant::now();
+    let (output, _) = run_scan(dir.path_str());
+    let elapsed = start.elapsed();
+
+    let findings = count_findings(&output);
+    assert!(
+        findings >= 10,
+        "Should detect secrets scattered in large file, found: {}",
+        findings
+    );
+    // Performance check: should complete in reasonable time
+    assert!(
+        elapsed.as_secs() < 60,
+        "Large file scan took too long: {:?}",
+        elapsed
+    );
+    println!(
+        "Large file (10k+ lines) scan completed in {:?}, found {} findings",
+        elapsed, findings
+    );
+}
+
+/// Test scanning a file with 1000+ secrets
+#[test]
+#[ignore] // Slow test - run with `cargo test -- --ignored`
+fn test_performance_many_secrets_1000() {
+    let dir = TestDir::new("perf-many-secrets");
+
+    // Generate a file with 1000+ secrets
+    let mut content = String::with_capacity(200_000);
+    for i in 0..1100 {
+        match i % 5 {
+            0 => content.push_str(&format!("OPENAI_KEY_{}={}\n", i, OPENAI_API_KEY)),
+            1 => content.push_str(&format!("GITHUB_TOKEN_{}={}\n", i, GITHUB_PAT)),
+            2 => content.push_str(&format!("AWS_KEY_{}={}\n", i, AWS_ACCESS_KEY_ID)),
+            3 => content.push_str(&format!("ANTHROPIC_KEY_{}={}\n", i, ANTHROPIC_API_KEY)),
+            _ => content.push_str(&format!("STRIPE_KEY_{}={}\n", i, STRIPE_SECRET_KEY)),
+        }
+    }
+    dir.write_file("many_secrets.env", &content);
+
+    let start = std::time::Instant::now();
+    let (output, _) = run_scan(dir.path_str());
+    let elapsed = start.elapsed();
+
+    // Note: Output is limited to 50 findings when not in a TTY (tests run without TTY)
+    // The scanner finds all 1100 secrets but only displays up to 50
+    // We verify the header shows the correct total count
+    assert!(
+        output.contains("Found 1100 potential secret"),
+        "Should find all 1100 secrets (header shows total), output: {}",
+        &output[..output.len().min(200)]
+    );
+
+    let findings = count_findings(&output);
+    assert!(
+        findings >= 50,
+        "Should display at least 50 findings (output limit), found: {}",
+        findings
+    );
+    // Performance check
+    assert!(
+        elapsed.as_secs() < 120,
+        "Many secrets scan took too long: {:?}",
+        elapsed
+    );
+    println!(
+        "Many secrets (1000+) scan completed in {:?}, displayed {} findings",
+        elapsed, findings
+    );
+}
+
+/// Test scanning with all rules enabled vs subset
+#[test]
+fn test_performance_all_rules_vs_subset() {
+    let dir = TestDir::new("perf-rules-comparison");
+
+    // File with multiple types of secrets
+    let content = format!(
+        r#"OPENAI_KEY={}
+GITHUB_TOKEN={}
+AWS_KEY={}
+ANTHROPIC_KEY={}
+DATABASE_URL={}
+"#,
+        OPENAI_API_KEY, GITHUB_PAT, AWS_ACCESS_KEY_ID, ANTHROPIC_API_KEY, POSTGRES_URI
+    );
+    dir.write_file("config.env", &content);
+
+    // Run with all rules (default)
+    let start_all = std::time::Instant::now();
+    let (output_all, _) = run_scan(dir.path_str());
+    let elapsed_all = start_all.elapsed();
+
+    let findings_all = count_findings(&output_all);
+    assert!(
+        findings_all >= 5,
+        "Should detect multiple secret types with all rules"
+    );
+
+    // The scanner should handle all rules efficiently
+    assert!(
+        elapsed_all.as_millis() < 30_000,
+        "All rules scan should complete in reasonable time: {:?}",
+        elapsed_all
+    );
+    println!(
+        "All rules scan: {} findings in {:?}",
+        findings_all, elapsed_all
+    );
+}
+
+/// Test scanning deeply nested directory structure (10+ levels)
+#[test]
+fn test_performance_deeply_nested_directories() {
+    let dir = TestDir::new("perf-deep-nesting");
+
+    // Create 12 levels of nesting
+    let mut nested_path = String::new();
+    for i in 0..12 {
+        nested_path.push_str(&format!("level{}/", i));
+    }
+
+    // Create files at various nesting levels
+    for depth in 0..12 {
+        let mut path = String::new();
+        for i in 0..=depth {
+            path.push_str(&format!("level{}/", i));
+        }
+        dir.write_file(
+            &format!("{}config_{}.env", path, depth),
+            &format!("OPENAI_API_KEY={}\n", OPENAI_API_KEY),
+        );
+    }
+
+    // Also add a deeply nested file with secret
+    dir.write_file(
+        &format!("{}deep_secret.py", nested_path),
+        &format!("API_KEY = '{}'\n", GITHUB_PAT),
+    );
+
+    let start = std::time::Instant::now();
+    let (output, _) = run_scan(dir.path_str());
+    let elapsed = start.elapsed();
+
+    let findings = count_findings(&output);
+    assert!(
+        findings >= 12,
+        "Should detect secrets in all nested levels, found: {}",
+        findings
+    );
+    assert!(
+        elapsed.as_secs() < 30,
+        "Nested directory scan took too long: {:?}",
+        elapsed
+    );
+    println!(
+        "Deeply nested (12 levels) scan: {} findings in {:?}",
+        findings, elapsed
+    );
+}
+
+/// Test scanning file with very long lines (10,000+ chars)
+#[test]
+fn test_performance_very_long_lines() {
+    let dir = TestDir::new("perf-long-lines");
+
+    // Create a file with very long lines
+    let padding = "x".repeat(5000);
+    let mut content = String::with_capacity(100_000);
+
+    // Line with secret in the middle
+    content.push_str(&format!(
+        "const long_var = '{}OPENAI_KEY={}{}'\n",
+        padding, OPENAI_API_KEY, padding
+    ));
+
+    // Line with secret at the beginning
+    content.push_str(&format!("GITHUB_TOKEN={}{}\n", GITHUB_PAT, padding));
+
+    // Line with secret at the end
+    content.push_str(&format!("{}AWS_KEY={}\n", padding, AWS_ACCESS_KEY_ID));
+
+    // Very long line (10,000+ chars) with multiple secrets
+    let long_padding = "y".repeat(10000);
+    content.push_str(&format!(
+        "{}ANTHROPIC_KEY={}{}STRIPE_KEY={}{}\n",
+        long_padding, ANTHROPIC_API_KEY, long_padding, STRIPE_SECRET_KEY, long_padding
+    ));
+
+    dir.write_file("long_lines.txt", &content);
+
+    let start = std::time::Instant::now();
+    let (output, _) = run_scan(dir.path_str());
+    let elapsed = start.elapsed();
+
+    let findings = count_findings(&output);
+    assert!(
+        findings >= 4,
+        "Should detect secrets in very long lines, found: {}",
+        findings
+    );
+    assert!(
+        elapsed.as_secs() < 30,
+        "Long lines scan took too long: {:?}",
+        elapsed
+    );
+    println!(
+        "Very long lines (10k+ chars) scan: {} findings in {:?}",
+        findings, elapsed
+    );
+}
+
+/// Test memory efficiency with large files
+/// This test verifies the scanner doesn't explode memory usage
+#[test]
+#[ignore] // Slow test - run with `cargo test -- --ignored`
+fn test_performance_memory_large_files() {
+    let dir = TestDir::new("perf-memory");
+
+    // Create multiple large files (simulating a real codebase)
+    for file_num in 0..10 {
+        let mut content = String::with_capacity(1_000_000);
+        for i in 0..5000 {
+            // Mix of regular lines and occasional secrets
+            if i % 500 == 0 {
+                content.push_str(&format!("SECRET_{}_{} = '{}'\n", file_num, i, OPENAI_API_KEY));
+            } else {
+                // Varied line content to prevent compression
+                content.push_str(&format!(
+                    "function process_{}_{}_data(input) {{ return input.map(x => x * {}); }}\n",
+                    file_num,
+                    i,
+                    i % 100
+                ));
+            }
+        }
+        dir.write_file(&format!("large_file_{}.js", file_num), &content);
+    }
+
+    let start = std::time::Instant::now();
+    let (output, _) = run_scan(dir.path_str());
+    let elapsed = start.elapsed();
+
+    let findings = count_findings(&output);
+    assert!(
+        findings >= 50,
+        "Should detect secrets across multiple large files, found: {}",
+        findings
+    );
+    // Should complete without timeout or memory issues
+    assert!(
+        elapsed.as_secs() < 180,
+        "Large files scan took too long: {:?}",
+        elapsed
+    );
+    println!(
+        "Memory test (10 large files): {} findings in {:?}",
+        findings, elapsed
+    );
+}
+
+/// Test scanning with mixed binary and text files
+#[test]
+fn test_performance_mixed_file_types() {
+    let dir = TestDir::new("perf-mixed-files");
+
+    // Text file with secrets
+    dir.write_file(
+        "config.txt",
+        &format!("API_KEY={}\n", OPENAI_API_KEY),
+    );
+
+    // Binary-like content (should be skipped or handled gracefully)
+    let mut binary_content = vec![0u8; 1000];
+    for (i, byte) in binary_content.iter_mut().enumerate() {
+        *byte = (i % 256) as u8;
+    }
+    // Write as bytes
+    std::fs::write(
+        dir.path().join("binary.dat"),
+        &binary_content,
+    ).expect("Failed to write binary file");
+
+    // JSON with secrets
+    dir.write_file(
+        "config.json",
+        &format!(r#"{{"key": "{}"}}"#, GITHUB_PAT),
+    );
+
+    // Empty file
+    dir.write_file("empty.txt", "");
+
+    // File with only newlines
+    dir.write_file("newlines.txt", "\n\n\n\n\n");
+
+    let start = std::time::Instant::now();
+    let (output, _) = run_scan(dir.path_str());
+    let elapsed = start.elapsed();
+
+    let findings = count_findings(&output);
+    assert!(
+        findings >= 2,
+        "Should detect secrets in text files while handling mixed content, found: {}",
+        findings
+    );
+    assert!(
+        elapsed.as_secs() < 30,
+        "Mixed files scan took too long: {:?}",
+        elapsed
+    );
+    println!(
+        "Mixed file types scan: {} findings in {:?}",
+        findings, elapsed
+    );
+}
+
+/// Test scanning files with extreme line counts
+#[test]
+#[ignore] // Very slow test - run with `cargo test -- --ignored`
+fn test_performance_extreme_line_count() {
+    let dir = TestDir::new("perf-extreme-lines");
+
+    // Generate a file with 50,000 lines
+    let mut content = String::with_capacity(3_000_000);
+    for i in 0..50_000 {
+        if i % 5000 == 0 {
+            content.push_str(&format!("# Secret at line {}\nOPENAI_KEY={}\n", i, OPENAI_API_KEY));
+        } else {
+            content.push_str(&format!("line_{} = 'value_{}'\n", i, i));
+        }
+    }
+    dir.write_file("extreme.py", &content);
+
+    let start = std::time::Instant::now();
+    let (output, _) = run_scan(dir.path_str());
+    let elapsed = start.elapsed();
+
+    let findings = count_findings(&output);
+    assert!(
+        findings >= 10,
+        "Should detect secrets in extreme line count file, found: {}",
+        findings
+    );
+    assert!(
+        elapsed.as_secs() < 300,
+        "Extreme line count scan took too long: {:?}",
+        elapsed
+    );
+    println!(
+        "Extreme line count (50k lines) scan: {} findings in {:?}",
+        findings, elapsed
+    );
+}
+
+/// Test scanning many small files
+#[test]
+fn test_performance_many_small_files() {
+    let dir = TestDir::new("perf-many-files");
+
+    // Create 500 small files
+    for i in 0..500 {
+        let content = if i % 10 == 0 {
+            format!("API_KEY_{} = '{}'\n", i, OPENAI_API_KEY)
+        } else {
+            format!("CONFIG_{} = 'value_{}'\n", i, i)
+        };
+        dir.write_file(&format!("config_{}.txt", i), &content);
+    }
+
+    let start = std::time::Instant::now();
+    let (output, _) = run_scan(dir.path_str());
+    let elapsed = start.elapsed();
+
+    let findings = count_findings(&output);
+    assert!(
+        findings >= 50,
+        "Should detect secrets across many small files, found: {}",
+        findings
+    );
+    assert!(
+        elapsed.as_secs() < 60,
+        "Many small files scan took too long: {:?}",
+        elapsed
+    );
+    println!(
+        "Many small files (500 files) scan: {} findings in {:?}",
+        findings, elapsed
+    );
+}
+
+/// Test scanning with pathological patterns that could cause regex issues
+#[test]
+fn test_performance_pathological_patterns() {
+    let dir = TestDir::new("perf-pathological");
+
+    // Patterns that could cause issues with naive regex implementations
+    let content = format!(
+        r#"
+// Repeated characters that might confuse pattern matchers
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+OPENAI_KEY={}
+
+// Many special characters
+!@#$%^&*(){{}}[]|\\:";'<>,.?/~`!@#$%^&*(){{}}[]|\\:";'<>,.?/~`
+GITHUB_TOKEN={}
+
+// Almost-matching patterns
+sk-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+AKIA000000000000000a
+
+// Real secrets after noise
+AWS_KEY={}
+
+// Unicode and mixed content
+Hello 世界 🌍 مرحبا שלום
+ANTHROPIC_KEY={}
+"#,
+        OPENAI_API_KEY, GITHUB_PAT, AWS_ACCESS_KEY_ID, ANTHROPIC_API_KEY
+    );
+    dir.write_file("pathological.txt", &content);
+
+    let start = std::time::Instant::now();
+    let (output, _) = run_scan(dir.path_str());
+    let elapsed = start.elapsed();
+
+    let findings = count_findings(&output);
+    assert!(
+        findings >= 4,
+        "Should detect secrets despite pathological patterns, found: {}",
+        findings
+    );
+    assert!(
+        elapsed.as_secs() < 10,
+        "Pathological patterns scan took too long: {:?}",
+        elapsed
+    );
+    println!(
+        "Pathological patterns scan: {} findings in {:?}",
+        findings, elapsed
     );
 }

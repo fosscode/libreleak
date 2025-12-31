@@ -7,6 +7,7 @@
 use crate::cli::OutputFormat;
 use crate::scanner::Finding;
 use std::collections::HashMap;
+use std::io::IsTerminal;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 /// Scan metadata for enhanced reporting
@@ -140,7 +141,14 @@ fn print_text(findings: &[Finding], show_context: bool) {
 
     println!("Found {} potential secret(s):\n", findings.len());
 
-    for finding in findings {
+    let is_tty = std::io::stdout().is_terminal();
+    let max_findings = if is_tty {
+        findings.len()
+    } else {
+        findings.len().min(50)
+    };
+
+    for finding in findings.iter().take(max_findings) {
         println!(
             "\x1b[1;31m{}\x1b[0m {}:{}:{}",
             finding.rule_id, finding.file, finding.line, finding.column
@@ -174,16 +182,47 @@ fn print_text(findings: &[Finding], show_context: bool) {
                     " "
                 };
                 let line_style = if ctx.is_match { "\x1b[33m" } else { "\x1b[90m" };
+                let content = if is_tty {
+                    ctx.content.clone()
+                } else {
+                    truncate_chars(&ctx.content, 500)
+                };
                 println!(
                     "    {} {:>4} | {}\x1b[0m",
                     prefix,
                     ctx.line_num,
-                    line_style.to_owned() + &ctx.content
+                    line_style.to_owned() + &content
                 );
             }
         }
         println!();
     }
+
+    if max_findings < findings.len() {
+        println!(
+            "Output truncated (showing {} of {} findings). Use `-f json`/`-f report` for full output.",
+            max_findings,
+            findings.len()
+        );
+    }
+}
+
+fn truncate_chars(s: &str, max_chars: usize) -> String {
+    let char_count = s.chars().count();
+    if char_count <= max_chars {
+        return s.to_string();
+    }
+
+    if max_chars <= 1 {
+        return "…".to_string();
+    }
+
+    let head_len = max_chars.saturating_sub(1) / 2;
+    let tail_len = max_chars.saturating_sub(1) - head_len;
+
+    let head: String = s.chars().take(head_len).collect();
+    let tail: String = s.chars().skip(char_count.saturating_sub(tail_len)).collect();
+    format!("{head}…{tail}")
 }
 
 fn print_json(findings: &[Finding]) {
@@ -457,4 +496,746 @@ fn print_report(findings: &[Finding], metadata: Option<&ScanMetadata>) {
     }
     println!("  ]");
     println!("}}")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::scanner::{ContextLine, Finding};
+
+    // ========================================================================
+    // HELPER FUNCTIONS
+    // ========================================================================
+
+    fn create_test_finding(
+        rule_id: &str,
+        rule_name: &str,
+        file: &str,
+        line: usize,
+        column: usize,
+        secret: &str,
+    ) -> Finding {
+        Finding {
+            rule_id: rule_id.to_string(),
+            rule_name: rule_name.to_string(),
+            file: file.to_string(),
+            line,
+            column,
+            matched: secret.to_string(),
+            secret: secret.to_string(),
+            secret_raw: secret.to_string(),
+            context: vec![],
+            #[cfg(feature = "verify")]
+            verification_status: None,
+        }
+    }
+
+    fn create_test_finding_with_context(
+        rule_id: &str,
+        rule_name: &str,
+        file: &str,
+        line: usize,
+        column: usize,
+        secret: &str,
+        context: Vec<ContextLine>,
+    ) -> Finding {
+        Finding {
+            rule_id: rule_id.to_string(),
+            rule_name: rule_name.to_string(),
+            file: file.to_string(),
+            line,
+            column,
+            matched: secret.to_string(),
+            secret: secret.to_string(),
+            secret_raw: secret.to_string(),
+            context,
+            #[cfg(feature = "verify")]
+            verification_status: None,
+        }
+    }
+
+    // ========================================================================
+    // ESCAPE_JSON TESTS
+    // ========================================================================
+
+    #[test]
+    fn test_escape_json_simple_string() {
+        assert_eq!(escape_json("hello world"), "hello world");
+    }
+
+    #[test]
+    fn test_escape_json_quotes() {
+        assert_eq!(escape_json(r#"say "hello""#), r#"say \"hello\""#);
+    }
+
+    #[test]
+    fn test_escape_json_backslash() {
+        assert_eq!(escape_json(r"path\to\file"), r"path\\to\\file");
+    }
+
+    #[test]
+    fn test_escape_json_newline() {
+        assert_eq!(escape_json("line1\nline2"), "line1\\nline2");
+    }
+
+    #[test]
+    fn test_escape_json_carriage_return() {
+        assert_eq!(escape_json("line1\rline2"), "line1\\rline2");
+    }
+
+    #[test]
+    fn test_escape_json_tab() {
+        assert_eq!(escape_json("col1\tcol2"), "col1\\tcol2");
+    }
+
+    #[test]
+    fn test_escape_json_control_characters() {
+        // Test ASCII control character (bell = 0x07)
+        assert_eq!(escape_json("\x07"), "\\u0007");
+        // Test null character
+        assert_eq!(escape_json("\x00"), "\\u0000");
+        // Test form feed
+        assert_eq!(escape_json("\x0C"), "\\u000c");
+    }
+
+    #[test]
+    fn test_escape_json_mixed() {
+        assert_eq!(
+            escape_json("path\\to\\file.txt\nline with \"quotes\""),
+            "path\\\\to\\\\file.txt\\nline with \\\"quotes\\\""
+        );
+    }
+
+    #[test]
+    fn test_escape_json_unicode() {
+        // Unicode characters should pass through unchanged
+        assert_eq!(escape_json("hello"), "hello");
+        assert_eq!(escape_json("emoji: 🔒"), "emoji: 🔒");
+    }
+
+    #[test]
+    fn test_escape_json_empty() {
+        assert_eq!(escape_json(""), "");
+    }
+
+    // ========================================================================
+    // TRUNCATE_CHARS TESTS
+    // ========================================================================
+
+    #[test]
+    fn test_truncate_chars_short_string() {
+        // String shorter than limit - no truncation
+        assert_eq!(truncate_chars("hello", 10), "hello");
+    }
+
+    #[test]
+    fn test_truncate_chars_exact_limit() {
+        // String exactly at limit - no truncation
+        assert_eq!(truncate_chars("helloworld", 10), "helloworld");
+    }
+
+    #[test]
+    fn test_truncate_chars_over_limit() {
+        // String over limit - should truncate
+        let result = truncate_chars("hello world long string", 10);
+        assert!(result.contains("…"));
+        assert!(result.chars().count() <= 10);
+    }
+
+    #[test]
+    fn test_truncate_chars_preserves_start_and_end() {
+        let result = truncate_chars("0123456789ABCDEFGHIJ", 10);
+        // Should have head...tail format
+        assert!(result.starts_with("0123"));
+        assert!(result.ends_with("GHIJ"));
+        assert!(result.contains("…"));
+    }
+
+    #[test]
+    fn test_truncate_chars_single_char_limit() {
+        // Edge case: max_chars = 1
+        assert_eq!(truncate_chars("hello", 1), "…");
+    }
+
+    #[test]
+    fn test_truncate_chars_zero_limit() {
+        // Edge case: max_chars = 0
+        assert_eq!(truncate_chars("hello", 0), "…");
+    }
+
+    #[test]
+    fn test_truncate_chars_unicode() {
+        // Unicode characters should be handled correctly
+        let unicode_str = "hello🔒world🔐test";
+        let result = truncate_chars(unicode_str, 10);
+        assert!(result.chars().count() <= 10);
+    }
+
+    #[test]
+    fn test_truncate_chars_empty_string() {
+        assert_eq!(truncate_chars("", 10), "");
+    }
+
+    // ========================================================================
+    // GET_TIMESTAMP TESTS
+    // ========================================================================
+
+    #[test]
+    fn test_get_timestamp_format() {
+        let timestamp = get_timestamp();
+        // Should be ISO 8601 format: YYYY-MM-DDTHH:MM:SSZ
+        assert!(timestamp.contains("T"));
+        assert!(timestamp.ends_with("Z"));
+        assert_eq!(timestamp.len(), 20);
+    }
+
+    #[test]
+    fn test_get_timestamp_valid_year() {
+        let timestamp = get_timestamp();
+        let year: u32 = timestamp[0..4].parse().unwrap();
+        // Should be a reasonable year (between 2020 and 2100)
+        assert!(year >= 2020 && year <= 2100);
+    }
+
+    #[test]
+    fn test_get_timestamp_valid_month() {
+        let timestamp = get_timestamp();
+        let month: u32 = timestamp[5..7].parse().unwrap();
+        assert!(month >= 1 && month <= 12);
+    }
+
+    #[test]
+    fn test_get_timestamp_valid_day() {
+        let timestamp = get_timestamp();
+        let day: u32 = timestamp[8..10].parse().unwrap();
+        assert!(day >= 1 && day <= 31);
+    }
+
+    #[test]
+    fn test_get_timestamp_valid_time() {
+        let timestamp = get_timestamp();
+        let hour: u32 = timestamp[11..13].parse().unwrap();
+        let minute: u32 = timestamp[14..16].parse().unwrap();
+        let second: u32 = timestamp[17..19].parse().unwrap();
+        assert!(hour < 24);
+        assert!(minute < 60);
+        assert!(second < 60);
+    }
+
+    // ========================================================================
+    // GENERATE_SCAN_ID TESTS
+    // ========================================================================
+
+    #[test]
+    fn test_generate_scan_id_length() {
+        let id = generate_scan_id();
+        assert_eq!(id.len(), 32);
+    }
+
+    #[test]
+    fn test_generate_scan_id_hex() {
+        let id = generate_scan_id();
+        // Should be valid hex characters
+        assert!(id.chars().all(|c| c.is_ascii_hexdigit()));
+    }
+
+    #[test]
+    fn test_generate_scan_id_unique() {
+        let id1 = generate_scan_id();
+        // Small delay to ensure different timestamps
+        std::thread::sleep(std::time::Duration::from_millis(1));
+        let id2 = generate_scan_id();
+        // IDs should be different (based on timestamp)
+        assert_ne!(id1, id2);
+    }
+
+    // ========================================================================
+    // SCAN_METADATA TESTS
+    // ========================================================================
+
+    #[test]
+    fn test_scan_metadata_new_directory() {
+        let meta = ScanMetadata::new("/path/to/directory");
+        assert_eq!(meta.target, "/path/to/directory");
+        assert_eq!(meta.target_type, "directory");
+        assert!(!meta.scan_id.is_empty());
+    }
+
+    #[test]
+    fn test_scan_metadata_new_git_url_https() {
+        let meta = ScanMetadata::new("https://github.com/user/repo");
+        assert_eq!(meta.target_type, "git_url");
+    }
+
+    #[test]
+    fn test_scan_metadata_new_git_url_ssh() {
+        let meta = ScanMetadata::new("git@github.com:user/repo.git");
+        assert_eq!(meta.target_type, "git_url");
+    }
+
+    #[test]
+    fn test_scan_metadata_with_git_info() {
+        let meta = ScanMetadata::new("/path")
+            .with_git_info(
+                Some("main".to_string()),
+                Some("abc123".to_string()),
+                Some("origin".to_string()),
+            );
+        assert_eq!(meta.git_branch, Some("main".to_string()));
+        assert_eq!(meta.git_commit, Some("abc123".to_string()));
+        assert_eq!(meta.git_remote, Some("origin".to_string()));
+    }
+
+    #[test]
+    fn test_scan_metadata_with_duration() {
+        let meta = ScanMetadata::new("/path")
+            .with_duration(1234);
+        assert_eq!(meta.scan_duration_ms, 1234);
+    }
+
+    #[test]
+    fn test_scan_metadata_default() {
+        let meta = ScanMetadata::default();
+        assert!(meta.scan_id.is_empty());
+        assert!(meta.target.is_empty());
+        assert!(meta.target_type.is_empty());
+        assert!(meta.git_branch.is_none());
+        assert!(meta.git_commit.is_none());
+        assert!(meta.git_remote.is_none());
+        assert_eq!(meta.scan_duration_ms, 0);
+    }
+
+    // ========================================================================
+    // CONTEXT LINE TESTS
+    // ========================================================================
+
+    #[test]
+    fn test_context_line_creation() {
+        let ctx = ContextLine {
+            line_num: 42,
+            content: "API_KEY=secret123".to_string(),
+            is_match: true,
+        };
+        assert_eq!(ctx.line_num, 42);
+        assert_eq!(ctx.content, "API_KEY=secret123");
+        assert!(ctx.is_match);
+    }
+
+    #[test]
+    fn test_context_line_non_match() {
+        let ctx = ContextLine {
+            line_num: 41,
+            content: "# Configuration".to_string(),
+            is_match: false,
+        };
+        assert!(!ctx.is_match);
+    }
+
+    // ========================================================================
+    // FINDING STRUCTURE TESTS
+    // ========================================================================
+
+    #[test]
+    fn test_finding_creation() {
+        let finding = create_test_finding(
+            "github-pat",
+            "GitHub Personal Access Token",
+            "src/config.rs",
+            10,
+            5,
+            "ghp_****",
+        );
+        assert_eq!(finding.rule_id, "github-pat");
+        assert_eq!(finding.rule_name, "GitHub Personal Access Token");
+        assert_eq!(finding.file, "src/config.rs");
+        assert_eq!(finding.line, 10);
+        assert_eq!(finding.column, 5);
+        assert_eq!(finding.secret, "ghp_****");
+    }
+
+    #[test]
+    fn test_finding_with_context() {
+        let context = vec![
+            ContextLine {
+                line_num: 9,
+                content: "// Config".to_string(),
+                is_match: false,
+            },
+            ContextLine {
+                line_num: 10,
+                content: "TOKEN=ghp_****".to_string(),
+                is_match: true,
+            },
+            ContextLine {
+                line_num: 11,
+                content: "// End".to_string(),
+                is_match: false,
+            },
+        ];
+        let finding = create_test_finding_with_context(
+            "github-pat",
+            "GitHub PAT",
+            "file.rs",
+            10,
+            7,
+            "ghp_****",
+            context,
+        );
+        assert_eq!(finding.context.len(), 3);
+        assert!(finding.context[1].is_match);
+    }
+
+    // ========================================================================
+    // JSON FORMAT OUTPUT TESTS
+    // ========================================================================
+
+    #[test]
+    fn test_json_format_escapes_special_chars_in_file() {
+        // Test that file paths with special characters are escaped
+        let finding = create_test_finding(
+            "test-rule",
+            "Test Rule",
+            r"src\path\to\file.rs",  // Windows-style path
+            1,
+            1,
+            "secret",
+        );
+        // The escape_json function should handle backslashes
+        let escaped_file = escape_json(&finding.file);
+        assert_eq!(escaped_file, r"src\\path\\to\\file.rs");
+    }
+
+    #[test]
+    fn test_json_format_escapes_quotes_in_secret() {
+        let finding = create_test_finding(
+            "test-rule",
+            "Test Rule",
+            "file.rs",
+            1,
+            1,
+            r#"secret with "quotes""#,
+        );
+        let escaped_secret = escape_json(&finding.secret);
+        assert_eq!(escaped_secret, r#"secret with \"quotes\""#);
+    }
+
+    #[test]
+    fn test_json_format_escapes_newlines_in_content() {
+        let ctx = ContextLine {
+            line_num: 1,
+            content: "line1\nline2".to_string(),
+            is_match: false,
+        };
+        let escaped = escape_json(&ctx.content);
+        assert_eq!(escaped, "line1\\nline2");
+    }
+
+    // ========================================================================
+    // SARIF FORMAT TESTS
+    // ========================================================================
+
+    #[test]
+    fn test_sarif_rule_id_escaped() {
+        let finding = create_test_finding(
+            "rule-with-\"special\"-chars",
+            "Rule Name",
+            "file.rs",
+            1,
+            1,
+            "secret",
+        );
+        let escaped_rule = escape_json(&finding.rule_id);
+        assert!(!escaped_rule.contains('"') || escaped_rule.contains("\\\""));
+    }
+
+    #[test]
+    fn test_sarif_message_escaped() {
+        let finding = create_test_finding(
+            "test-rule",
+            "Rule with \"quotes\" and\nnewlines",
+            "file.rs",
+            1,
+            1,
+            "secret",
+        );
+        let escaped_name = escape_json(&finding.rule_name);
+        assert!(escaped_name.contains("\\\""));
+        assert!(escaped_name.contains("\\n"));
+    }
+
+    // ========================================================================
+    // REPORT FORMAT TESTS
+    // ========================================================================
+
+    #[test]
+    fn test_report_severity_high_private_key() {
+        let findings = vec![
+            create_test_finding("rsa-private-key", "RSA Private Key", "file.pem", 1, 1, "***"),
+        ];
+        // High severity should be counted for private-key rule
+        let high_count = findings
+            .iter()
+            .filter(|f| {
+                f.rule_id.contains("private-key")
+                    || f.rule_id.contains("aws")
+                    || f.rule_id.contains("database")
+                    || f.rule_id.contains("jwt")
+            })
+            .count();
+        assert_eq!(high_count, 1);
+    }
+
+    #[test]
+    fn test_report_severity_high_aws() {
+        let findings = vec![
+            create_test_finding("aws-access-key-id", "AWS Access Key", "config.yml", 1, 1, "AKIA***"),
+        ];
+        let high_count = findings
+            .iter()
+            .filter(|f| f.rule_id.contains("aws"))
+            .count();
+        assert_eq!(high_count, 1);
+    }
+
+    #[test]
+    fn test_report_severity_medium_api_key() {
+        let findings = vec![
+            create_test_finding("generic-api-key", "Generic API Key", "file.env", 1, 1, "key***"),
+        ];
+        let medium_count = findings
+            .iter()
+            .filter(|f| {
+                f.rule_id.contains("api-key")
+                    || f.rule_id.contains("token")
+                    || f.rule_id.contains("secret")
+            })
+            .count();
+        assert_eq!(medium_count, 1);
+    }
+
+    #[test]
+    fn test_report_category_extraction() {
+        let findings = vec![
+            create_test_finding("github-pat", "GitHub PAT", "file.rs", 1, 1, "ghp_***"),
+            create_test_finding("github-fine-grained-pat", "GitHub Fine Grained", "file2.rs", 1, 1, "github_pat_***"),
+            create_test_finding("aws-access-key-id", "AWS Key", "file3.rs", 1, 1, "AKIA***"),
+        ];
+
+        let mut category_counts: HashMap<String, usize> = HashMap::new();
+        for finding in &findings {
+            let category = finding
+                .rule_id
+                .split('-')
+                .next()
+                .unwrap_or("unknown")
+                .to_string();
+            *category_counts.entry(category).or_insert(0) += 1;
+        }
+
+        assert_eq!(category_counts.get("github"), Some(&2));
+        assert_eq!(category_counts.get("aws"), Some(&1));
+    }
+
+    #[test]
+    fn test_report_rule_counts() {
+        let findings = vec![
+            create_test_finding("github-pat", "GitHub PAT", "file1.rs", 1, 1, "ghp_1"),
+            create_test_finding("github-pat", "GitHub PAT", "file2.rs", 2, 1, "ghp_2"),
+            create_test_finding("aws-access-key-id", "AWS Key", "file3.rs", 1, 1, "AKIA1"),
+        ];
+
+        let mut rule_counts: HashMap<String, usize> = HashMap::new();
+        for finding in &findings {
+            *rule_counts.entry(finding.rule_id.clone()).or_insert(0) += 1;
+        }
+
+        assert_eq!(rule_counts.get("github-pat"), Some(&2));
+        assert_eq!(rule_counts.get("aws-access-key-id"), Some(&1));
+        assert_eq!(rule_counts.len(), 2);
+    }
+
+    // ========================================================================
+    // EDGE CASE TESTS
+    // ========================================================================
+
+    #[test]
+    fn test_empty_findings() {
+        let findings: Vec<Finding> = vec![];
+        assert!(findings.is_empty());
+    }
+
+    #[test]
+    fn test_finding_with_empty_context() {
+        let finding = create_test_finding(
+            "test-rule",
+            "Test",
+            "file.rs",
+            1,
+            1,
+            "secret",
+        );
+        assert!(finding.context.is_empty());
+    }
+
+    #[test]
+    fn test_finding_with_unicode_secret() {
+        let finding = create_test_finding(
+            "test-rule",
+            "Test",
+            "file.rs",
+            1,
+            1,
+            "secret_with_unicode_🔒_emoji",
+        );
+        let escaped = escape_json(&finding.secret);
+        assert!(escaped.contains("🔒"));
+    }
+
+    #[test]
+    fn test_finding_with_long_file_path() {
+        let long_path = "a/".repeat(100) + "file.rs";
+        let finding = create_test_finding(
+            "test-rule",
+            "Test",
+            &long_path,
+            1,
+            1,
+            "secret",
+        );
+        assert!(finding.file.len() > 200);
+    }
+
+    #[test]
+    fn test_finding_at_line_zero() {
+        // Edge case: line 0 (unusual but possible)
+        let finding = create_test_finding(
+            "test-rule",
+            "Test",
+            "file.rs",
+            0,
+            1,
+            "secret",
+        );
+        assert_eq!(finding.line, 0);
+    }
+
+    #[test]
+    fn test_finding_at_column_zero() {
+        let finding = create_test_finding(
+            "test-rule",
+            "Test",
+            "file.rs",
+            1,
+            0,
+            "secret",
+        );
+        assert_eq!(finding.column, 0);
+    }
+
+    // ========================================================================
+    // SPECIAL CHARACTER HANDLING TESTS
+    // ========================================================================
+
+    #[test]
+    fn test_escape_json_all_special_chars() {
+        let input = "\"\\/\n\r\t";
+        let expected = "\\\"\\\\/\\n\\r\\t";
+        assert_eq!(escape_json(input), expected);
+    }
+
+    #[test]
+    fn test_escape_json_backslash_before_quote() {
+        // Test that backslash before quote is handled correctly
+        let input = r#"\"#;
+        let expected = r"\\";
+        assert_eq!(escape_json(input), expected);
+    }
+
+    #[test]
+    fn test_escape_json_multiple_backslashes() {
+        let input = r"\\\\";
+        let expected = r"\\\\\\\\";
+        assert_eq!(escape_json(input), expected);
+    }
+
+    #[test]
+    fn test_escape_json_crlf() {
+        let input = "line1\r\nline2";
+        let expected = "line1\\r\\nline2";
+        assert_eq!(escape_json(input), expected);
+    }
+
+    // ========================================================================
+    // REDACTION IN OUTPUT TESTS
+    // ========================================================================
+
+    #[test]
+    fn test_finding_redacted_secret_format() {
+        // Test that redacted secrets follow expected pattern
+        let finding = create_test_finding(
+            "test-rule",
+            "Test",
+            "file.rs",
+            1,
+            1,
+            "ghp_...xxxx",  // Typical redacted format
+        );
+        assert!(finding.secret.contains("..."));
+    }
+
+    #[test]
+    fn test_context_with_redacted_content() {
+        let context = vec![
+            ContextLine {
+                line_num: 1,
+                content: "TOKEN=ghp_...xxxx".to_string(),
+                is_match: true,
+            },
+        ];
+        let finding = create_test_finding_with_context(
+            "github-pat",
+            "GitHub PAT",
+            "file.env",
+            1,
+            7,
+            "ghp_...xxxx",
+            context,
+        );
+        assert!(finding.context[0].content.contains("..."));
+    }
+
+    // ========================================================================
+    // OUTPUT FORMAT ENUM TESTS
+    // ========================================================================
+
+    #[test]
+    fn test_output_format_text() {
+        let format = OutputFormat::Text;
+        assert!(matches!(format, OutputFormat::Text));
+    }
+
+    #[test]
+    fn test_output_format_json() {
+        let format = OutputFormat::Json;
+        assert!(matches!(format, OutputFormat::Json));
+    }
+
+    #[test]
+    fn test_output_format_sarif() {
+        let format = OutputFormat::Sarif;
+        assert!(matches!(format, OutputFormat::Sarif));
+    }
+
+    #[test]
+    fn test_output_format_report() {
+        let format = OutputFormat::Report;
+        assert!(matches!(format, OutputFormat::Report));
+    }
+
+    #[test]
+    fn test_output_format_copy() {
+        let format1 = OutputFormat::Json;
+        let format2 = format1; // Copy trait
+        assert!(matches!(format2, OutputFormat::Json));
+    }
 }
