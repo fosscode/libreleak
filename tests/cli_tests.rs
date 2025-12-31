@@ -1135,7 +1135,10 @@ fn test_action_combined_flags() {
         output.status.success(),
         "Should succeed without --fail-on-leak"
     );
-    assert!(out.contains("Found"), "Should report findings in text format");
+    assert!(
+        out.contains("Found"),
+        "Should report findings in text format"
+    );
 }
 
 #[test]
@@ -1360,10 +1363,7 @@ fn test_sarif_output_special_characters() {
     );
 
     // Verify the file was detected
-    assert!(
-        out.contains("ruleId"),
-        "Should have findings with ruleId"
-    );
+    assert!(out.contains("ruleId"), "Should have findings with ruleId");
 }
 
 #[test]
@@ -1404,10 +1404,7 @@ fn test_text_output_very_long_lines() {
 
     // Create content with a secret embedded in a very long line
     let padding = "x".repeat(500);
-    let long_line = format!(
-        "{}KEY='{}'{}",
-        padding, GITHUB_PAT, padding
-    );
+    let long_line = format!("{}KEY='{}'{}", padding, GITHUB_PAT, padding);
     dir.write_file("long_line.py", &long_line);
 
     let output = cargo_run(&[dir.path_str(), "-f", "text"]);
@@ -1418,10 +1415,7 @@ fn test_text_output_very_long_lines() {
         out.contains("Found") && out.contains("potential secret"),
         "Should find secret in long line"
     );
-    assert!(
-        out.contains("github"),
-        "Should identify as GitHub token"
-    );
+    assert!(out.contains("github"), "Should identify as GitHub token");
 
     // The output should not crash and should complete
     assert!(
@@ -1471,10 +1465,13 @@ fn test_multiple_formats_same_findings() {
     let dir = TestDir::new("multi-format-consistency");
 
     // Create files with known number of secrets (3 distinct secrets)
-    dir.write_file("secrets.py", &format!(
-        "GITHUB = '{}'\nAWS = '{}'\nSLACK = '{}'",
-        GITHUB_PAT, AWS_ACCESS_KEY_ID, SLACK_BOT_TOKEN
-    ));
+    dir.write_file(
+        "secrets.py",
+        &format!(
+            "GITHUB = '{}'\nAWS = '{}'\nSLACK = '{}'",
+            GITHUB_PAT, AWS_ACCESS_KEY_ID, SLACK_BOT_TOKEN
+        ),
+    );
 
     // Get findings count from each format
     let json_output = cargo_run(&[dir.path_str(), "-f", "json"]);
@@ -1532,7 +1529,9 @@ fn test_multiple_formats_same_findings() {
     assert!(
         json_count == sarif_count && sarif_count == report_count,
         "All formats should report same findings: JSON={}, SARIF={}, Report={}",
-        json_count, sarif_count, report_count
+        json_count,
+        sarif_count,
+        report_count
     );
 }
 
@@ -1575,7 +1574,9 @@ fn test_output_with_binary_in_path() {
 
     // Verify files with unusual extensions are included in output
     assert!(
-        json_out.contains(".exe.bak") || json_out.contains(".bin.txt") || json_out.contains(".dll.config"),
+        json_out.contains(".exe.bak")
+            || json_out.contains(".bin.txt")
+            || json_out.contains(".dll.config"),
         "Should include files with binary-like extensions"
     );
 }
@@ -2045,10 +2046,7 @@ fn test_format_typo_error() {
 
     let output = cargo_run(&[dir.path_str(), "-f", "josn"]);
 
-    assert!(
-        !output.status.success(),
-        "Format typo should fail"
-    );
+    assert!(!output.status.success(), "Format typo should fail");
     let err = stderr(&output);
     // Error message should mention it's an unknown format
     // and ideally list valid options
@@ -2064,7 +2062,10 @@ fn test_format_typo_error() {
         || err.contains("report");
     // Not strictly required but helpful for user experience
     if !suggests_valid {
-        eprintln!("Note: Error message does not suggest valid format options: {}", err);
+        eprintln!(
+            "Note: Error message does not suggest valid format options: {}",
+            err
+        );
     }
 }
 
@@ -2076,10 +2077,7 @@ fn test_unknown_long_flag_error() {
 
     let output = cargo_run(&[dir.path_str(), "--unknown-flag"]);
 
-    assert!(
-        !output.status.success(),
-        "Unknown long flag should fail"
-    );
+    assert!(!output.status.success(), "Unknown long flag should fail");
     let err = stderr(&output);
     assert!(
         err.contains("unknown") || err.contains("error") || err.contains("unexpected"),
@@ -2126,9 +2124,13 @@ fn test_path_with_special_shell_chars() {
 
     let out = stdout(&output);
     // If successful, should find the secret
-    if output.status.success() || output.status.code() == Some(0) || output.status.code() == Some(1) {
+    if output.status.success() || output.status.code() == Some(0) || output.status.code() == Some(1)
+    {
         assert!(
-            out.contains("Found") || out.contains("secret") || out.contains("openai") || out.contains("deepseek"),
+            out.contains("Found")
+                || out.contains("secret")
+                || out.contains("openai")
+                || out.contains("deepseek"),
             "Should detect secrets in paths with special characters. Got: {}",
             out
         );
@@ -2284,7 +2286,10 @@ fn test_context_large_number() {
     // Create a small file (only 5 lines total)
     dir.write_file(
         "config.py",
-        &format!("# line 1\n# line 2\nKEY = '{}'\n# line 4\n# line 5", GITHUB_PAT),
+        &format!(
+            "# line 1\n# line 2\nKEY = '{}'\n# line 4\n# line 5",
+            GITHUB_PAT
+        ),
     );
 
     let output = cargo_run(&[dir.path_str(), "-C", "100"]);
@@ -2414,7 +2419,10 @@ fn test_context_exceeds_file_lines() {
     // When context is larger than file, shows whole file without error
     let dir = TestDir::new("context-exceeds");
     // Create a 3-line file
-    dir.write_file("tiny.py", &format!("# start\nKEY = '{}'\n# end", GITHUB_PAT));
+    dir.write_file(
+        "tiny.py",
+        &format!("# start\nKEY = '{}'\n# end", GITHUB_PAT),
+    );
 
     // Request 50 lines of context on a 3-line file
     let output = cargo_run(&[dir.path_str(), "-C", "50"]);
@@ -2698,10 +2706,7 @@ fn test_verify_with_all_formats() {
         json_out.contains("\"findings\""),
         "JSON should have findings"
     );
-    assert!(
-        json_out.contains("\"rule_id\""),
-        "JSON should have rule_id"
-    );
+    assert!(json_out.contains("\"rule_id\""), "JSON should have rule_id");
 
     // Test --verify with sarif format
     let sarif_output = cargo_run(&[dir.path_str(), "--verify", "-f", "sarif"]);
@@ -2747,14 +2752,14 @@ fn test_short_and_long_flags_mixed() {
     // Use --only to include both, --exclude to remove one
     let output = cargo_run(&[
         dir.path_str(),
-        "-x",                               // short for --fail-on-leak
-        "-f",                               // short for --format
+        "-x", // short for --fail-on-leak
+        "-f", // short for --format
         "json",
-        "-C",                               // short for --context
+        "-C", // short for --context
         "1",
-        "--only",                           // long form
+        "--only", // long form
         "github-pat,aws-access-key-id",
-        "--exclude",                        // long form
+        "--exclude", // long form
         "aws-access-key-id",
     ]);
     let out = stdout(&output);

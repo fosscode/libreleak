@@ -1906,11 +1906,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "minimax-api-key",
             name: "MiniMax API Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "MINIMAX_API_KEY",
-                    "MINIMAX_GROUP_ID",
-                    "minimax_api_key",
-                ],
+                keys: &["MINIMAX_API_KEY", "MINIMAX_GROUP_ID", "minimax_api_key"],
                 min_value_len: 32,
             },
         },
@@ -1919,11 +1915,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "moonshot-api-key",
             name: "Moonshot AI API Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "MOONSHOT_API_KEY",
-                    "KIMI_API_KEY",
-                    "moonshot_api_key",
-                ],
+                keys: &["MOONSHOT_API_KEY", "KIMI_API_KEY", "moonshot_api_key"],
                 min_value_len: 32,
             },
         },
@@ -2052,11 +2044,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "jdcloud-access-key",
             name: "JD Cloud Access Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "JDCLOUD_ACCESS_KEY",
-                    "JD_ACCESS_KEY",
-                    "jdcloud_access_key",
-                ],
+                keys: &["JDCLOUD_ACCESS_KEY", "JD_ACCESS_KEY", "jdcloud_access_key"],
                 min_value_len: 20,
             },
         },
@@ -2064,11 +2052,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "jdcloud-secret-key",
             name: "JD Cloud Secret Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "JDCLOUD_SECRET_KEY",
-                    "JD_SECRET_KEY",
-                    "jdcloud_secret_key",
-                ],
+                keys: &["JDCLOUD_SECRET_KEY", "JD_SECRET_KEY", "jdcloud_secret_key"],
                 min_value_len: 32,
             },
         },
@@ -2164,11 +2148,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "paytm-merchant-key",
             name: "Paytm Merchant Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "PAYTM_MERCHANT_KEY",
-                    "PAYTM_KEY",
-                    "paytm_merchant_key",
-                ],
+                keys: &["PAYTM_MERCHANT_KEY", "PAYTM_KEY", "paytm_merchant_key"],
                 min_value_len: 16,
             },
         },
@@ -2176,11 +2156,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "paytm-merchant-id",
             name: "Paytm Merchant ID",
             detector: Detector::KeyValue {
-                keys: &[
-                    "PAYTM_MERCHANT_ID",
-                    "PAYTM_MID",
-                    "paytm_merchant_id",
-                ],
+                keys: &["PAYTM_MERCHANT_ID", "PAYTM_MID", "paytm_merchant_id"],
                 min_value_len: 10,
             },
         },
@@ -2189,11 +2165,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "phonepe-salt-key",
             name: "PhonePe Salt Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "PHONEPE_SALT_KEY",
-                    "PHONEPE_KEY",
-                    "phonepe_salt_key",
-                ],
+                keys: &["PHONEPE_SALT_KEY", "PHONEPE_KEY", "phonepe_salt_key"],
                 min_value_len: 32,
             },
         },
@@ -2201,11 +2173,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "phonepe-merchant-id",
             name: "PhonePe Merchant ID",
             detector: Detector::KeyValue {
-                keys: &[
-                    "PHONEPE_MERCHANT_ID",
-                    "PHONEPE_MID",
-                    "phonepe_merchant_id",
-                ],
+                keys: &["PHONEPE_MERCHANT_ID", "PHONEPE_MID", "phonepe_merchant_id"],
                 min_value_len: 10,
             },
         },
@@ -2214,11 +2182,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "cashfree-app-id",
             name: "Cashfree App ID",
             detector: Detector::KeyValue {
-                keys: &[
-                    "CASHFREE_APP_ID",
-                    "CF_APP_ID",
-                    "cashfree_app_id",
-                ],
+                keys: &["CASHFREE_APP_ID", "CF_APP_ID", "cashfree_app_id"],
                 min_value_len: 10,
             },
         },
@@ -2239,11 +2203,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "instamojo-api-key",
             name: "Instamojo API Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "INSTAMOJO_API_KEY",
-                    "INSTAMOJO_KEY",
-                    "instamojo_api_key",
-                ],
+                keys: &["INSTAMOJO_API_KEY", "INSTAMOJO_KEY", "instamojo_api_key"],
                 min_value_len: 20,
             },
         },
@@ -2264,11 +2224,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "zoho-client-secret",
             name: "Zoho Client Secret",
             detector: Detector::KeyValue {
-                keys: &[
-                    "ZOHO_CLIENT_SECRET",
-                    "ZOHO_SECRET",
-                    "zoho_client_secret",
-                ],
+                keys: &["ZOHO_CLIENT_SECRET", "ZOHO_SECRET", "zoho_client_secret"],
                 min_value_len: 32,
             },
         },
@@ -2276,10 +2232,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "zoho-refresh-token",
             name: "Zoho Refresh Token",
             detector: Detector::KeyValue {
-                keys: &[
-                    "ZOHO_REFRESH_TOKEN",
-                    "zoho_refresh_token",
-                ],
+                keys: &["ZOHO_REFRESH_TOKEN", "zoho_refresh_token"],
                 min_value_len: 32,
             },
         },
@@ -2329,11 +2282,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "ola-api-key",
             name: "Ola Maps API Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "OLA_API_KEY",
-                    "OLA_MAPS_KEY",
-                    "ola_api_key",
-                ],
+                keys: &["OLA_API_KEY", "OLA_MAPS_KEY", "ola_api_key"],
                 min_value_len: 20,
             },
         },
@@ -2342,11 +2291,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "msg91-auth-key",
             name: "MSG91 Auth Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "MSG91_AUTH_KEY",
-                    "MSG91_KEY",
-                    "msg91_auth_key",
-                ],
+                keys: &["MSG91_AUTH_KEY", "MSG91_KEY", "msg91_auth_key"],
                 min_value_len: 20,
             },
         },
@@ -2368,11 +2313,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "delhivery-api-key",
             name: "Delhivery API Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "DELHIVERY_API_KEY",
-                    "DELHIVERY_TOKEN",
-                    "delhivery_api_key",
-                ],
+                keys: &["DELHIVERY_API_KEY", "DELHIVERY_TOKEN", "delhivery_api_key"],
                 min_value_len: 20,
             },
         },
@@ -2381,11 +2322,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "icici-api-key",
             name: "ICICI Bank API Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "ICICI_API_KEY",
-                    "ICICI_CLIENT_ID",
-                    "icici_api_key",
-                ],
+                keys: &["ICICI_API_KEY", "ICICI_CLIENT_ID", "icici_api_key"],
                 min_value_len: 20,
             },
         },
@@ -2394,11 +2331,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "hdfc-api-key",
             name: "HDFC Bank API Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "HDFC_API_KEY",
-                    "HDFC_CLIENT_ID",
-                    "hdfc_api_key",
-                ],
+                keys: &["HDFC_API_KEY", "HDFC_CLIENT_ID", "hdfc_api_key"],
                 min_value_len: 20,
             },
         },
@@ -2421,11 +2354,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "juspay-api-key",
             name: "Juspay API Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "JUSPAY_API_KEY",
-                    "JUSPAY_MERCHANT_ID",
-                    "juspay_api_key",
-                ],
+                keys: &["JUSPAY_API_KEY", "JUSPAY_MERCHANT_ID", "juspay_api_key"],
                 min_value_len: 20,
             },
         },
@@ -2434,11 +2363,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "billdesk-secret-key",
             name: "BillDesk Secret Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "BILLDESK_SECRET_KEY",
-                    "BILLDESK_KEY",
-                    "billdesk_secret_key",
-                ],
+                keys: &["BILLDESK_SECRET_KEY", "BILLDESK_KEY", "billdesk_secret_key"],
                 min_value_len: 20,
             },
         },
@@ -2459,10 +2384,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "ccavenue-access-code",
             name: "CCAvenue Access Code",
             detector: Detector::KeyValue {
-                keys: &[
-                    "CCAVENUE_ACCESS_CODE",
-                    "ccavenue_access_code",
-                ],
+                keys: &["CCAVENUE_ACCESS_CODE", "ccavenue_access_code"],
                 min_value_len: 10,
             },
         },
@@ -2498,11 +2420,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "portkey-api-key",
             name: "Portkey API Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "PORTKEY_API_KEY",
-                    "PORTKEY_KEY",
-                    "portkey_api_key",
-                ],
+                keys: &["PORTKEY_API_KEY", "PORTKEY_KEY", "portkey_api_key"],
                 min_value_len: 20,
             },
         },
@@ -2511,11 +2429,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "helicone-api-key",
             name: "Helicone API Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "HELICONE_API_KEY",
-                    "HELICONE_KEY",
-                    "helicone_api_key",
-                ],
+                keys: &["HELICONE_API_KEY", "HELICONE_KEY", "helicone_api_key"],
                 min_value_len: 20,
             },
         },
@@ -2524,11 +2438,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "unify-api-key",
             name: "Unify AI API Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "UNIFY_API_KEY",
-                    "UNIFY_KEY",
-                    "unify_api_key",
-                ],
+                keys: &["UNIFY_API_KEY", "UNIFY_KEY", "unify_api_key"],
                 min_value_len: 20,
             },
         },
@@ -2537,11 +2447,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "edenai-api-key",
             name: "Eden AI API Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "EDENAI_API_KEY",
-                    "EDEN_AI_KEY",
-                    "edenai_api_key",
-                ],
+                keys: &["EDENAI_API_KEY", "EDEN_AI_KEY", "edenai_api_key"],
                 min_value_len: 20,
             },
         },
@@ -2550,11 +2456,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "requesty-api-key",
             name: "Requesty API Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "REQUESTY_API_KEY",
-                    "REQUESTY_KEY",
-                    "requesty_api_key",
-                ],
+                keys: &["REQUESTY_API_KEY", "REQUESTY_KEY", "requesty_api_key"],
                 min_value_len: 20,
             },
         },
@@ -2563,11 +2465,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "baseten-api-key",
             name: "Baseten API Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "BASETEN_API_KEY",
-                    "BASETEN_KEY",
-                    "baseten_api_key",
-                ],
+                keys: &["BASETEN_API_KEY", "BASETEN_KEY", "baseten_api_key"],
                 min_value_len: 20,
             },
         },
@@ -2576,11 +2474,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "modal-token",
             name: "Modal Token",
             detector: Detector::KeyValue {
-                keys: &[
-                    "MODAL_TOKEN_ID",
-                    "MODAL_TOKEN_SECRET",
-                    "modal_token",
-                ],
+                keys: &["MODAL_TOKEN_ID", "MODAL_TOKEN_SECRET", "modal_token"],
                 min_value_len: 20,
             },
         },
@@ -2589,11 +2483,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "banana-api-key",
             name: "Banana.dev API Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "BANANA_API_KEY",
-                    "BANANA_MODEL_KEY",
-                    "banana_api_key",
-                ],
+                keys: &["BANANA_API_KEY", "BANANA_MODEL_KEY", "banana_api_key"],
                 min_value_len: 20,
             },
         },
@@ -2641,11 +2531,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "tabby-api-key",
             name: "TabbyML API Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "TABBY_API_KEY",
-                    "TABBY_TOKEN",
-                    "tabby_api_key",
-                ],
+                keys: &["TABBY_API_KEY", "TABBY_TOKEN", "tabby_api_key"],
                 min_value_len: 20,
             },
         },
@@ -2703,11 +2589,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "line-channel-secret",
             name: "LINE Channel Secret",
             detector: Detector::KeyValue {
-                keys: &[
-                    "LINE_CHANNEL_SECRET",
-                    "LINE_SECRET",
-                    "line_channel_secret",
-                ],
+                keys: &["LINE_CHANNEL_SECRET", "LINE_SECRET", "line_channel_secret"],
                 min_value_len: 32,
             },
         },
@@ -2728,11 +2610,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "yahoo-japan-api-key",
             name: "Yahoo Japan API Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "YAHOO_JAPAN_API_KEY",
-                    "YJ_API_KEY",
-                    "yahoo_japan_api_key",
-                ],
+                keys: &["YAHOO_JAPAN_API_KEY", "YJ_API_KEY", "yahoo_japan_api_key"],
                 min_value_len: 20,
             },
         },
@@ -2741,11 +2619,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "rakuten-api-key",
             name: "Rakuten API Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "RAKUTEN_API_KEY",
-                    "RAKUTEN_APP_ID",
-                    "rakuten_api_key",
-                ],
+                keys: &["RAKUTEN_API_KEY", "RAKUTEN_APP_ID", "rakuten_api_key"],
                 min_value_len: 16,
             },
         },
@@ -2754,11 +2628,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "paypay-api-key",
             name: "PayPay API Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "PAYPAY_API_KEY",
-                    "PAYPAY_SECRET",
-                    "paypay_api_key",
-                ],
+                keys: &["PAYPAY_API_KEY", "PAYPAY_SECRET", "paypay_api_key"],
                 min_value_len: 20,
             },
         },
@@ -2771,11 +2641,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "kakao-rest-api-key",
             name: "Kakao REST API Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "KAKAO_REST_API_KEY",
-                    "KAKAO_API_KEY",
-                    "kakao_rest_api_key",
-                ],
+                keys: &["KAKAO_REST_API_KEY", "KAKAO_API_KEY", "kakao_rest_api_key"],
                 min_value_len: 32,
             },
         },
@@ -2783,10 +2649,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "kakao-admin-key",
             name: "Kakao Admin Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "KAKAO_ADMIN_KEY",
-                    "kakao_admin_key",
-                ],
+                keys: &["KAKAO_ADMIN_KEY", "kakao_admin_key"],
                 min_value_len: 32,
             },
         },
@@ -2795,11 +2658,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "naver-client-secret",
             name: "Naver Client Secret",
             detector: Detector::KeyValue {
-                keys: &[
-                    "NAVER_CLIENT_SECRET",
-                    "NAVER_SECRET",
-                    "naver_client_secret",
-                ],
+                keys: &["NAVER_CLIENT_SECRET", "NAVER_SECRET", "naver_client_secret"],
                 min_value_len: 10,
             },
         },
@@ -2807,11 +2666,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "naver-api-key",
             name: "Naver API Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "NAVER_API_KEY",
-                    "NAVER_CLIENT_ID",
-                    "naver_api_key",
-                ],
+                keys: &["NAVER_API_KEY", "NAVER_CLIENT_ID", "naver_api_key"],
                 min_value_len: 10,
             },
         },
@@ -2834,11 +2689,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "toss-secret-key",
             name: "Toss Payments Secret Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "TOSS_SECRET_KEY",
-                    "TOSS_PAYMENTS_SECRET",
-                    "toss_secret_key",
-                ],
+                keys: &["TOSS_SECRET_KEY", "TOSS_PAYMENTS_SECRET", "toss_secret_key"],
                 min_value_len: 20,
             },
         },
@@ -2864,11 +2715,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "grab-client-secret",
             name: "Grab API Client Secret",
             detector: Detector::KeyValue {
-                keys: &[
-                    "GRAB_CLIENT_SECRET",
-                    "GRAB_SECRET",
-                    "grab_client_secret",
-                ],
+                keys: &["GRAB_CLIENT_SECRET", "GRAB_SECRET", "grab_client_secret"],
                 min_value_len: 32,
             },
         },
@@ -2877,11 +2724,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "gojek-api-key",
             name: "Gojek API Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "GOJEK_API_KEY",
-                    "GOJEK_SECRET",
-                    "gojek_api_key",
-                ],
+                keys: &["GOJEK_API_KEY", "GOJEK_SECRET", "gojek_api_key"],
                 min_value_len: 20,
             },
         },
@@ -2890,11 +2733,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "shopee-partner-key",
             name: "Shopee Partner Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "SHOPEE_PARTNER_KEY",
-                    "SHOPEE_SECRET",
-                    "shopee_partner_key",
-                ],
+                keys: &["SHOPEE_PARTNER_KEY", "SHOPEE_SECRET", "shopee_partner_key"],
                 min_value_len: 32,
             },
         },
@@ -2903,11 +2742,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "lazada-app-secret",
             name: "Lazada App Secret",
             detector: Detector::KeyValue {
-                keys: &[
-                    "LAZADA_APP_SECRET",
-                    "LAZADA_SECRET",
-                    "lazada_app_secret",
-                ],
+                keys: &["LAZADA_APP_SECRET", "LAZADA_SECRET", "lazada_app_secret"],
                 min_value_len: 32,
             },
         },
@@ -2929,11 +2764,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "xendit-secret-key",
             name: "Xendit Secret Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "XENDIT_SECRET_KEY",
-                    "XENDIT_API_KEY",
-                    "xendit_secret_key",
-                ],
+                keys: &["XENDIT_SECRET_KEY", "XENDIT_API_KEY", "xendit_secret_key"],
                 min_value_len: 20,
             },
         },
@@ -2942,11 +2773,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "2c2p-secret-key",
             name: "2C2P Secret Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "TWOC2P_SECRET_KEY",
-                    "C2P_SECRET",
-                    "2c2p_secret_key",
-                ],
+                keys: &["TWOC2P_SECRET_KEY", "C2P_SECRET", "2c2p_secret_key"],
                 min_value_len: 20,
             },
         },
@@ -2955,11 +2782,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "vnpay-hash-secret",
             name: "VNPay Hash Secret",
             detector: Detector::KeyValue {
-                keys: &[
-                    "VNPAY_HASH_SECRET",
-                    "VNPAY_SECRET",
-                    "vnpay_hash_secret",
-                ],
+                keys: &["VNPAY_HASH_SECRET", "VNPAY_SECRET", "vnpay_hash_secret"],
                 min_value_len: 20,
             },
         },
@@ -2968,11 +2791,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "momo-secret-key",
             name: "MoMo Secret Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "MOMO_SECRET_KEY",
-                    "MOMO_PARTNER_SECRET",
-                    "momo_secret_key",
-                ],
+                keys: &["MOMO_SECRET_KEY", "MOMO_PARTNER_SECRET", "momo_secret_key"],
                 min_value_len: 20,
             },
         },
@@ -2981,11 +2800,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "gcash-secret",
             name: "GCash API Secret",
             detector: Detector::KeyValue {
-                keys: &[
-                    "GCASH_SECRET",
-                    "GCASH_API_SECRET",
-                    "gcash_secret",
-                ],
+                keys: &["GCASH_SECRET", "GCASH_API_SECRET", "gcash_secret"],
                 min_value_len: 20,
             },
         },
@@ -2994,11 +2809,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "paymaya-secret",
             name: "Maya/PayMaya Secret Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "PAYMAYA_SECRET_KEY",
-                    "MAYA_SECRET",
-                    "paymaya_secret",
-                ],
+                keys: &["PAYMAYA_SECRET_KEY", "MAYA_SECRET", "paymaya_secret"],
                 min_value_len: 20,
             },
         },
@@ -3007,11 +2818,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "promptpay-api-key",
             name: "PromptPay API Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "PROMPTPAY_API_KEY",
-                    "PROMPTPAY_SECRET",
-                    "promptpay_api_key",
-                ],
+                keys: &["PROMPTPAY_API_KEY", "PROMPTPAY_SECRET", "promptpay_api_key"],
                 min_value_len: 20,
             },
         },
@@ -3020,11 +2827,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "touchngo-secret",
             name: "Touch 'n Go API Secret",
             detector: Detector::KeyValue {
-                keys: &[
-                    "TNG_SECRET",
-                    "TOUCHNGO_SECRET",
-                    "touchngo_secret",
-                ],
+                keys: &["TNG_SECRET", "TOUCHNGO_SECRET", "touchngo_secret"],
                 min_value_len: 20,
             },
         },
@@ -3037,11 +2840,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "nubank-api-key",
             name: "Nubank API Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "NUBANK_API_KEY",
-                    "NUBANK_SECRET",
-                    "nubank_api_key",
-                ],
+                keys: &["NUBANK_API_KEY", "NUBANK_SECRET", "nubank_api_key"],
                 min_value_len: 20,
             },
         },
@@ -3050,11 +2849,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "pagseguro-token",
             name: "PagSeguro Token",
             detector: Detector::KeyValue {
-                keys: &[
-                    "PAGSEGURO_TOKEN",
-                    "PAGSEGURO_API_TOKEN",
-                    "pagseguro_token",
-                ],
+                keys: &["PAGSEGURO_TOKEN", "PAGSEGURO_API_TOKEN", "pagseguro_token"],
                 min_value_len: 32,
             },
         },
@@ -3076,11 +2871,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "pix-api-key",
             name: "PIX API Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "PIX_API_KEY",
-                    "PIX_CLIENT_SECRET",
-                    "pix_api_key",
-                ],
+                keys: &["PIX_API_KEY", "PIX_CLIENT_SECRET", "pix_api_key"],
                 min_value_len: 20,
             },
         },
@@ -3089,11 +2880,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "ifood-client-secret",
             name: "iFood Client Secret",
             detector: Detector::KeyValue {
-                keys: &[
-                    "IFOOD_CLIENT_SECRET",
-                    "IFOOD_SECRET",
-                    "ifood_client_secret",
-                ],
+                keys: &["IFOOD_CLIENT_SECRET", "IFOOD_SECRET", "ifood_client_secret"],
                 min_value_len: 32,
             },
         },
@@ -3102,11 +2889,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "rappi-api-key",
             name: "Rappi API Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "RAPPI_API_KEY",
-                    "RAPPI_SECRET",
-                    "rappi_api_key",
-                ],
+                keys: &["RAPPI_API_KEY", "RAPPI_SECRET", "rappi_api_key"],
                 min_value_len: 20,
             },
         },
@@ -3150,11 +2933,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "conekta-api-key",
             name: "Conekta API Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "CONEKTA_API_KEY",
-                    "CONEKTA_PRIVATE_KEY",
-                    "conekta_api_key",
-                ],
+                keys: &["CONEKTA_API_KEY", "CONEKTA_PRIVATE_KEY", "conekta_api_key"],
                 min_value_len: 20,
             },
         },
@@ -3163,11 +2942,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "clip-api-key",
             name: "Clip API Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "CLIP_API_KEY",
-                    "CLIP_SECRET",
-                    "clip_api_key",
-                ],
+                keys: &["CLIP_API_KEY", "CLIP_SECRET", "clip_api_key"],
                 min_value_len: 20,
             },
         },
@@ -3176,11 +2951,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "transbank-api-key",
             name: "Transbank API Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "TRANSBANK_API_KEY",
-                    "TRANSBANK_SECRET",
-                    "transbank_api_key",
-                ],
+                keys: &["TRANSBANK_API_KEY", "TRANSBANK_SECRET", "transbank_api_key"],
                 min_value_len: 32,
             },
         },
@@ -3267,11 +3038,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "mpesa-passkey",
             name: "M-Pesa Passkey",
             detector: Detector::KeyValue {
-                keys: &[
-                    "MPESA_PASSKEY",
-                    "MPESA_LIPA_PASSKEY",
-                    "mpesa_passkey",
-                ],
+                keys: &["MPESA_PASSKEY", "MPESA_LIPA_PASSKEY", "mpesa_passkey"],
                 min_value_len: 32,
             },
         },
@@ -3280,11 +3047,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "chipper-api-key",
             name: "Chipper Cash API Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "CHIPPER_API_KEY",
-                    "CHIPPER_SECRET",
-                    "chipper_api_key",
-                ],
+                keys: &["CHIPPER_API_KEY", "CHIPPER_SECRET", "chipper_api_key"],
                 min_value_len: 20,
             },
         },
@@ -3306,11 +3069,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "ozow-api-key",
             name: "Ozow API Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "OZOW_API_KEY",
-                    "OZOW_PRIVATE_KEY",
-                    "ozow_api_key",
-                ],
+                keys: &["OZOW_API_KEY", "OZOW_PRIVATE_KEY", "ozow_api_key"],
                 min_value_len: 20,
             },
         },
@@ -3319,11 +3078,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "yoco-secret-key",
             name: "Yoco Secret Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "YOCO_SECRET_KEY",
-                    "YOCO_API_KEY",
-                    "yoco_secret_key",
-                ],
+                keys: &["YOCO_SECRET_KEY", "YOCO_API_KEY", "yoco_secret_key"],
                 min_value_len: 20,
             },
         },
@@ -3332,11 +3087,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "dpo-company-token",
             name: "DPO Company Token",
             detector: Detector::KeyValue {
-                keys: &[
-                    "DPO_COMPANY_TOKEN",
-                    "DPO_SERVICE_TYPE",
-                    "dpo_company_token",
-                ],
+                keys: &["DPO_COMPANY_TOKEN", "DPO_SERVICE_TYPE", "dpo_company_token"],
                 min_value_len: 20,
             },
         },
@@ -3349,11 +3100,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "yandex-api-key",
             name: "Yandex API Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "YANDEX_API_KEY",
-                    "YANDEX_SECRET",
-                    "yandex_api_key",
-                ],
+                keys: &["YANDEX_API_KEY", "YANDEX_SECRET", "yandex_api_key"],
                 min_value_len: 32,
             },
         },
@@ -3375,11 +3122,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "yandex-gpt-api-key",
             name: "YandexGPT API Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "YANDEX_GPT_API_KEY",
-                    "YANDEXGPT_KEY",
-                    "yandex_gpt_api_key",
-                ],
+                keys: &["YANDEX_GPT_API_KEY", "YANDEXGPT_KEY", "yandex_gpt_api_key"],
                 min_value_len: 32,
             },
         },
@@ -3401,11 +3144,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "vk-service-token",
             name: "VK Service Token",
             detector: Detector::KeyValue {
-                keys: &[
-                    "VK_SERVICE_TOKEN",
-                    "VK_SERVICE_KEY",
-                    "vk_service_token",
-                ],
+                keys: &["VK_SERVICE_TOKEN", "VK_SERVICE_KEY", "vk_service_token"],
                 min_value_len: 50,
             },
         },
@@ -3414,11 +3153,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "sber-api-key",
             name: "Sberbank API Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "SBER_API_KEY",
-                    "SBERBANK_SECRET",
-                    "sber_api_key",
-                ],
+                keys: &["SBER_API_KEY", "SBERBANK_SECRET", "sber_api_key"],
                 min_value_len: 32,
             },
         },
@@ -3453,11 +3188,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "kaspi-api-key",
             name: "Kaspi API Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "KASPI_API_KEY",
-                    "KASPI_SECRET",
-                    "kaspi_api_key",
-                ],
+                keys: &["KASPI_API_KEY", "KASPI_SECRET", "kaspi_api_key"],
                 min_value_len: 20,
             },
         },
@@ -3470,11 +3201,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "careem-api-key",
             name: "Careem API Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "CAREEM_API_KEY",
-                    "CAREEM_SECRET",
-                    "careem_api_key",
-                ],
+                keys: &["CAREEM_API_KEY", "CAREEM_SECRET", "careem_api_key"],
                 min_value_len: 20,
             },
         },
@@ -3483,11 +3210,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "noon-api-key",
             name: "Noon API Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "NOON_API_KEY",
-                    "NOON_SECRET",
-                    "noon_api_key",
-                ],
+                keys: &["NOON_API_KEY", "NOON_SECRET", "noon_api_key"],
                 min_value_len: 20,
             },
         },
@@ -3496,11 +3219,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "talabat-api-key",
             name: "Talabat API Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "TALABAT_API_KEY",
-                    "TALABAT_SECRET",
-                    "talabat_api_key",
-                ],
+                keys: &["TALABAT_API_KEY", "TALABAT_SECRET", "talabat_api_key"],
                 min_value_len: 20,
             },
         },
@@ -3509,11 +3228,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "tabby-payments-secret",
             name: "Tabby Payments Secret Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "TABBY_SECRET_KEY",
-                    "TABBY_PUBLIC_KEY",
-                    "tabby_secret_key",
-                ],
+                keys: &["TABBY_SECRET_KEY", "TABBY_PUBLIC_KEY", "tabby_secret_key"],
                 min_value_len: 20,
             },
         },
@@ -3522,11 +3237,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "tamara-api-token",
             name: "Tamara API Token",
             detector: Detector::KeyValue {
-                keys: &[
-                    "TAMARA_API_TOKEN",
-                    "TAMARA_SECRET",
-                    "tamara_api_token",
-                ],
+                keys: &["TAMARA_API_TOKEN", "TAMARA_SECRET", "tamara_api_token"],
                 min_value_len: 32,
             },
         },
@@ -3548,11 +3259,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "paytabs-server-key",
             name: "PayTabs Server Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "PAYTABS_SERVER_KEY",
-                    "PAYTABS_SECRET",
-                    "paytabs_server_key",
-                ],
+                keys: &["PAYTABS_SERVER_KEY", "PAYTABS_SECRET", "paytabs_server_key"],
                 min_value_len: 20,
             },
         },
@@ -3599,10 +3306,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "ovh-consumer-key",
             name: "OVH Consumer Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "OVH_CONSUMER_KEY",
-                    "ovh_consumer_key",
-                ],
+                keys: &["OVH_CONSUMER_KEY", "ovh_consumer_key"],
                 min_value_len: 32,
             },
         },
@@ -3611,11 +3315,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "hetzner-api-token",
             name: "Hetzner API Token",
             detector: Detector::KeyValue {
-                keys: &[
-                    "HETZNER_API_TOKEN",
-                    "HCLOUD_TOKEN",
-                    "hetzner_api_token",
-                ],
+                keys: &["HETZNER_API_TOKEN", "HCLOUD_TOKEN", "hetzner_api_token"],
                 min_value_len: 64,
             },
         },
@@ -3624,11 +3324,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "klarna-api-secret",
             name: "Klarna API Secret",
             detector: Detector::KeyValue {
-                keys: &[
-                    "KLARNA_API_SECRET",
-                    "KLARNA_SECRET",
-                    "klarna_api_secret",
-                ],
+                keys: &["KLARNA_API_SECRET", "KLARNA_SECRET", "klarna_api_secret"],
                 min_value_len: 20,
             },
         },
@@ -3637,11 +3333,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "adyen-api-key",
             name: "Adyen API Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "ADYEN_API_KEY",
-                    "ADYEN_SECRET",
-                    "adyen_api_key",
-                ],
+                keys: &["ADYEN_API_KEY", "ADYEN_SECRET", "adyen_api_key"],
                 min_value_len: 32,
             },
         },
@@ -3668,11 +3360,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "revolut-api-key",
             name: "Revolut API Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "REVOLUT_API_KEY",
-                    "REVOLUT_SECRET",
-                    "revolut_api_key",
-                ],
+                keys: &["REVOLUT_API_KEY", "REVOLUT_SECRET", "revolut_api_key"],
                 min_value_len: 32,
             },
         },
@@ -3681,11 +3369,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "wise-api-token",
             name: "Wise API Token",
             detector: Detector::KeyValue {
-                keys: &[
-                    "WISE_API_TOKEN",
-                    "TRANSFERWISE_TOKEN",
-                    "wise_api_token",
-                ],
+                keys: &["WISE_API_TOKEN", "TRANSFERWISE_TOKEN", "wise_api_token"],
                 min_value_len: 32,
             },
         },
@@ -3694,11 +3378,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "sumup-api-key",
             name: "SumUp API Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "SUMUP_API_KEY",
-                    "SUMUP_SECRET",
-                    "sumup_api_key",
-                ],
+                keys: &["SUMUP_API_KEY", "SUMUP_SECRET", "sumup_api_key"],
                 min_value_len: 20,
             },
         },
@@ -3707,11 +3387,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "ideal-merchant-key",
             name: "iDEAL Merchant Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "IDEAL_MERCHANT_KEY",
-                    "IDEAL_SECRET",
-                    "ideal_merchant_key",
-                ],
+                keys: &["IDEAL_MERCHANT_KEY", "IDEAL_SECRET", "ideal_merchant_key"],
                 min_value_len: 20,
             },
         },
@@ -3755,11 +3431,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "trustly-api-secret",
             name: "Trustly API Secret",
             detector: Detector::KeyValue {
-                keys: &[
-                    "TRUSTLY_API_SECRET",
-                    "TRUSTLY_SECRET",
-                    "trustly_api_secret",
-                ],
+                keys: &["TRUSTLY_API_SECRET", "TRUSTLY_SECRET", "trustly_api_secret"],
                 min_value_len: 20,
             },
         },
@@ -3768,11 +3440,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "sofort-api-key",
             name: "SOFORT API Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "SOFORT_API_KEY",
-                    "SOFORT_CONFIG_KEY",
-                    "sofort_api_key",
-                ],
+                keys: &["SOFORT_API_KEY", "SOFORT_CONFIG_KEY", "sofort_api_key"],
                 min_value_len: 20,
             },
         },
@@ -3781,11 +3449,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "giropay-api-key",
             name: "Giropay API Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "GIROPAY_API_KEY",
-                    "GIROPAY_SECRET",
-                    "giropay_api_key",
-                ],
+                keys: &["GIROPAY_API_KEY", "GIROPAY_SECRET", "giropay_api_key"],
                 min_value_len: 20,
             },
         },
@@ -3807,11 +3471,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "blik-api-key",
             name: "BLIK API Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "BLIK_API_KEY",
-                    "BLIK_SECRET",
-                    "blik_api_key",
-                ],
+                keys: &["BLIK_API_KEY", "BLIK_SECRET", "blik_api_key"],
                 min_value_len: 20,
             },
         },
@@ -3820,11 +3480,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "mbway-api-key",
             name: "MBWay API Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "MBWAY_API_KEY",
-                    "MBWAY_SECRET",
-                    "mbway_api_key",
-                ],
+                keys: &["MBWAY_API_KEY", "MBWAY_SECRET", "mbway_api_key"],
                 min_value_len: 20,
             },
         },
@@ -3833,11 +3489,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "bizum-api-key",
             name: "Bizum API Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "BIZUM_API_KEY",
-                    "BIZUM_SECRET",
-                    "bizum_api_key",
-                ],
+                keys: &["BIZUM_API_KEY", "BIZUM_SECRET", "bizum_api_key"],
                 min_value_len: 20,
             },
         },
@@ -3874,11 +3526,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "mobilepay-api-key",
             name: "MobilePay API Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "MOBILEPAY_API_KEY",
-                    "MOBILEPAY_SECRET",
-                    "mobilepay_api_key",
-                ],
+                keys: &["MOBILEPAY_API_KEY", "MOBILEPAY_SECRET", "mobilepay_api_key"],
                 min_value_len: 20,
             },
         },
@@ -3887,11 +3535,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "n26-api-key",
             name: "N26 API Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "N26_API_KEY",
-                    "N26_SECRET",
-                    "n26_api_key",
-                ],
+                keys: &["N26_API_KEY", "N26_SECRET", "n26_api_key"],
                 min_value_len: 20,
             },
         },
@@ -3900,11 +3544,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "monzo-access-token",
             name: "Monzo Access Token",
             detector: Detector::KeyValue {
-                keys: &[
-                    "MONZO_ACCESS_TOKEN",
-                    "MONZO_TOKEN",
-                    "monzo_access_token",
-                ],
+                keys: &["MONZO_ACCESS_TOKEN", "MONZO_TOKEN", "monzo_access_token"],
                 min_value_len: 40,
             },
         },
@@ -3926,11 +3566,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "bunq-api-key",
             name: "Bunq API Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "BUNQ_API_KEY",
-                    "BUNQ_TOKEN",
-                    "bunq_api_key",
-                ],
+                keys: &["BUNQ_API_KEY", "BUNQ_TOKEN", "bunq_api_key"],
                 min_value_len: 64,
             },
         },
@@ -3939,11 +3575,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "aleph-alpha-api-key",
             name: "Aleph Alpha API Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "ALEPH_ALPHA_API_KEY",
-                    "AA_API_KEY",
-                    "aleph_alpha_api_key",
-                ],
+                keys: &["ALEPH_ALPHA_API_KEY", "AA_API_KEY", "aleph_alpha_api_key"],
                 min_value_len: 32,
             },
         },
@@ -3952,11 +3584,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "lighton-api-key",
             name: "LightOn API Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "LIGHTON_API_KEY",
-                    "LIGHTON_TOKEN",
-                    "lighton_api_key",
-                ],
+                keys: &["LIGHTON_API_KEY", "LIGHTON_TOKEN", "lighton_api_key"],
                 min_value_len: 32,
             },
         },
@@ -3965,11 +3593,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "ionos-api-key",
             name: "IONOS API Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "IONOS_API_KEY",
-                    "IONOS_TOKEN",
-                    "ionos_api_key",
-                ],
+                keys: &["IONOS_API_KEY", "IONOS_TOKEN", "ionos_api_key"],
                 min_value_len: 32,
             },
         },
@@ -4022,11 +3646,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "canva-api-key",
             name: "Canva API Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "CANVA_API_KEY",
-                    "CANVA_SECRET",
-                    "canva_api_key",
-                ],
+                keys: &["CANVA_API_KEY", "CANVA_SECRET", "canva_api_key"],
                 min_value_len: 32,
             },
         },
@@ -4035,11 +3655,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "afterpay-secret",
             name: "Afterpay Secret Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "AFTERPAY_SECRET_KEY",
-                    "CLEARPAY_SECRET",
-                    "afterpay_secret",
-                ],
+                keys: &["AFTERPAY_SECRET_KEY", "CLEARPAY_SECRET", "afterpay_secret"],
                 min_value_len: 32,
             },
         },
@@ -4048,11 +3664,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "zip-api-key",
             name: "Zip API Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "ZIP_API_KEY",
-                    "ZIP_SECRET",
-                    "zip_api_key",
-                ],
+                keys: &["ZIP_API_KEY", "ZIP_SECRET", "zip_api_key"],
                 min_value_len: 20,
             },
         },
@@ -4065,11 +3677,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "getir-api-key",
             name: "Getir API Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "GETIR_API_KEY",
-                    "GETIR_SECRET",
-                    "getir_api_key",
-                ],
+                keys: &["GETIR_API_KEY", "GETIR_SECRET", "getir_api_key"],
                 min_value_len: 20,
             },
         },
@@ -4078,11 +3686,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "trendyol-api-key",
             name: "Trendyol API Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "TRENDYOL_API_KEY",
-                    "TRENDYOL_SECRET",
-                    "trendyol_api_key",
-                ],
+                keys: &["TRENDYOL_API_KEY", "TRENDYOL_SECRET", "trendyol_api_key"],
                 min_value_len: 20,
             },
         },
@@ -4091,11 +3695,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "iyzico-secret-key",
             name: "iyzico Secret Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "IYZICO_SECRET_KEY",
-                    "IYZICO_API_KEY",
-                    "iyzico_secret_key",
-                ],
+                keys: &["IYZICO_SECRET_KEY", "IYZICO_API_KEY", "iyzico_secret_key"],
                 min_value_len: 20,
             },
         },
@@ -4104,11 +3704,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "paytr-merchant-key",
             name: "PayTR Merchant Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "PAYTR_MERCHANT_KEY",
-                    "PAYTR_SECRET",
-                    "paytr_merchant_key",
-                ],
+                keys: &["PAYTR_MERCHANT_KEY", "PAYTR_SECRET", "paytr_merchant_key"],
                 min_value_len: 20,
             },
         },
@@ -4121,11 +3717,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "jazzcash-secret",
             name: "JazzCash Secret",
             detector: Detector::KeyValue {
-                keys: &[
-                    "JAZZCASH_SECRET",
-                    "JAZZCASH_PASSWORD",
-                    "jazzcash_secret",
-                ],
+                keys: &["JAZZCASH_SECRET", "JAZZCASH_PASSWORD", "jazzcash_secret"],
                 min_value_len: 16,
             },
         },
@@ -4134,11 +3726,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "easypaisa-secret",
             name: "EasyPaisa Secret",
             detector: Detector::KeyValue {
-                keys: &[
-                    "EASYPAISA_SECRET",
-                    "EASYPAISA_KEY",
-                    "easypaisa_secret",
-                ],
+                keys: &["EASYPAISA_SECRET", "EASYPAISA_KEY", "easypaisa_secret"],
                 min_value_len: 16,
             },
         },
@@ -4147,11 +3735,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "bkash-app-secret",
             name: "bKash App Secret",
             detector: Detector::KeyValue {
-                keys: &[
-                    "BKASH_APP_SECRET",
-                    "BKASH_SECRET_KEY",
-                    "bkash_app_secret",
-                ],
+                keys: &["BKASH_APP_SECRET", "BKASH_SECRET_KEY", "bkash_app_secret"],
                 min_value_len: 20,
             },
         },
@@ -4160,11 +3744,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "nagad-private-key",
             name: "Nagad Private Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "NAGAD_PRIVATE_KEY",
-                    "NAGAD_SECRET",
-                    "nagad_private_key",
-                ],
+                keys: &["NAGAD_PRIVATE_KEY", "NAGAD_SECRET", "nagad_private_key"],
                 min_value_len: 32,
             },
         },
@@ -4177,11 +3757,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "vercel-token",
             name: "Vercel Token",
             detector: Detector::KeyValue {
-                keys: &[
-                    "VERCEL_TOKEN",
-                    "VERCEL_API_TOKEN",
-                    "vercel_token",
-                ],
+                keys: &["VERCEL_TOKEN", "VERCEL_API_TOKEN", "vercel_token"],
                 min_value_len: 24,
             },
         },
@@ -4203,11 +3779,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "railway-token",
             name: "Railway Token",
             detector: Detector::KeyValue {
-                keys: &[
-                    "RAILWAY_TOKEN",
-                    "RAILWAY_API_TOKEN",
-                    "railway_token",
-                ],
+                keys: &["RAILWAY_TOKEN", "RAILWAY_API_TOKEN", "railway_token"],
                 min_value_len: 32,
             },
         },
@@ -4216,11 +3788,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "render-api-key",
             name: "Render API Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "RENDER_API_KEY",
-                    "RENDER_TOKEN",
-                    "render_api_key",
-                ],
+                keys: &["RENDER_API_KEY", "RENDER_TOKEN", "render_api_key"],
                 min_value_len: 32,
             },
         },
@@ -4229,11 +3797,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "fly-api-token",
             name: "Fly.io API Token",
             detector: Detector::KeyValue {
-                keys: &[
-                    "FLY_API_TOKEN",
-                    "FLY_ACCESS_TOKEN",
-                    "fly_api_token",
-                ],
+                keys: &["FLY_API_TOKEN", "FLY_ACCESS_TOKEN", "fly_api_token"],
                 min_value_len: 32,
             },
         },
@@ -4242,10 +3806,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "neon-api-key",
             name: "Neon API Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "NEON_API_KEY",
-                    "neon_api_key",
-                ],
+                keys: &["NEON_API_KEY", "neon_api_key"],
                 min_value_len: 32,
             },
         },
@@ -4280,10 +3841,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "convex-deploy-key",
             name: "Convex Deploy Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "CONVEX_DEPLOY_KEY",
-                    "convex_deploy_key",
-                ],
+                keys: &["CONVEX_DEPLOY_KEY", "convex_deploy_key"],
                 min_value_len: 32,
             },
         },
@@ -4301,11 +3859,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "clerk-api-key",
             name: "Clerk API Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "CLERK_SECRET_KEY",
-                    "CLERK_API_KEY",
-                    "clerk_secret_key",
-                ],
+                keys: &["CLERK_SECRET_KEY", "CLERK_API_KEY", "clerk_secret_key"],
                 min_value_len: 32,
             },
         },
@@ -4314,11 +3868,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "auth0-client-secret",
             name: "Auth0 Client Secret",
             detector: Detector::KeyValue {
-                keys: &[
-                    "AUTH0_CLIENT_SECRET",
-                    "AUTH0_SECRET",
-                    "auth0_client_secret",
-                ],
+                keys: &["AUTH0_CLIENT_SECRET", "AUTH0_SECRET", "auth0_client_secret"],
                 min_value_len: 32,
             },
         },
@@ -4327,11 +3877,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "okta-api-token",
             name: "Okta API Token",
             detector: Detector::KeyValue {
-                keys: &[
-                    "OKTA_API_TOKEN",
-                    "OKTA_CLIENT_SECRET",
-                    "okta_api_token",
-                ],
+                keys: &["OKTA_API_TOKEN", "OKTA_CLIENT_SECRET", "okta_api_token"],
                 min_value_len: 32,
             },
         },
@@ -4340,11 +3886,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "segment-write-key",
             name: "Segment Write Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "SEGMENT_WRITE_KEY",
-                    "SEGMENT_API_KEY",
-                    "segment_write_key",
-                ],
+                keys: &["SEGMENT_WRITE_KEY", "SEGMENT_API_KEY", "segment_write_key"],
                 min_value_len: 20,
             },
         },
@@ -4353,11 +3895,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "amplitude-api-key",
             name: "Amplitude API Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "AMPLITUDE_API_KEY",
-                    "AMPLITUDE_SECRET",
-                    "amplitude_api_key",
-                ],
+                keys: &["AMPLITUDE_API_KEY", "AMPLITUDE_SECRET", "amplitude_api_key"],
                 min_value_len: 32,
             },
         },
@@ -4366,11 +3904,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "mixpanel-secret",
             name: "Mixpanel Secret",
             detector: Detector::KeyValue {
-                keys: &[
-                    "MIXPANEL_SECRET",
-                    "MIXPANEL_API_SECRET",
-                    "mixpanel_secret",
-                ],
+                keys: &["MIXPANEL_SECRET", "MIXPANEL_API_SECRET", "mixpanel_secret"],
                 min_value_len: 32,
             },
         },
@@ -4389,11 +3923,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "launchdarkly-sdk-key",
             name: "LaunchDarkly SDK Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "LAUNCHDARKLY_SDK_KEY",
-                    "LD_SDK_KEY",
-                    "launchdarkly_sdk_key",
-                ],
+                keys: &["LAUNCHDARKLY_SDK_KEY", "LD_SDK_KEY", "launchdarkly_sdk_key"],
                 min_value_len: 32,
             },
         },
@@ -4402,11 +3932,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "sentry-auth-token",
             name: "Sentry Auth Token",
             detector: Detector::KeyValue {
-                keys: &[
-                    "SENTRY_AUTH_TOKEN",
-                    "SENTRY_TOKEN",
-                    "sentry_auth_token",
-                ],
+                keys: &["SENTRY_AUTH_TOKEN", "SENTRY_TOKEN", "sentry_auth_token"],
                 min_value_len: 64,
             },
         },
@@ -4428,11 +3954,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "imgix-api-key",
             name: "Imgix API Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "IMGIX_API_KEY",
-                    "IMGIX_SECURE_URL_TOKEN",
-                    "imgix_api_key",
-                ],
+                keys: &["IMGIX_API_KEY", "IMGIX_SECURE_URL_TOKEN", "imgix_api_key"],
                 min_value_len: 20,
             },
         },
@@ -4441,10 +3963,7 @@ pub fn builtin_rules() -> Vec<Rule> {
             id: "uploadcare-secret-key",
             name: "Uploadcare Secret Key",
             detector: Detector::KeyValue {
-                keys: &[
-                    "UPLOADCARE_SECRET_KEY",
-                    "uploadcare_secret_key",
-                ],
+                keys: &["UPLOADCARE_SECRET_KEY", "uploadcare_secret_key"],
                 min_value_len: 20,
             },
         },
@@ -4997,14 +4516,8 @@ mod tests {
             has_rule("zhipu-api-key"),
             "Should have Zhipu AI (ChatGLM) rule"
         );
-        assert!(
-            has_rule("baichuan-api-key"),
-            "Should have Baichuan AI rule"
-        );
-        assert!(
-            has_rule("minimax-api-key"),
-            "Should have MiniMax AI rule"
-        );
+        assert!(has_rule("baichuan-api-key"), "Should have Baichuan AI rule");
+        assert!(has_rule("minimax-api-key"), "Should have MiniMax AI rule");
         assert!(
             has_rule("moonshot-api-key"),
             "Should have Moonshot AI (Kimi) rule"
@@ -5113,10 +4626,7 @@ mod tests {
             has_rule("mapmyindia-api-key"),
             "Should have MapmyIndia API key rule"
         );
-        assert!(
-            has_rule("ola-api-key"),
-            "Should have Ola Maps API key rule"
-        );
+        assert!(has_rule("ola-api-key"), "Should have Ola Maps API key rule");
     }
 
     #[test]
@@ -5289,7 +4799,11 @@ mod tests {
         for rule in &rules {
             if let Detector::KeyValue { keys, .. } = &rule.detector {
                 for key in *keys {
-                    assert!(!key.is_empty(), "Rule {} has empty key in keys array", rule.id);
+                    assert!(
+                        !key.is_empty(),
+                        "Rule {} has empty key in keys array",
+                        rule.id
+                    );
                 }
             }
         }
@@ -5308,11 +4822,7 @@ mod tests {
                 );
                 // Patterns should contain valid port or path indicators
                 for pattern in *patterns {
-                    assert!(
-                        !pattern.is_empty(),
-                        "Rule {} has empty pattern",
-                        rule.id
-                    );
+                    assert!(!pattern.is_empty(), "Rule {} has empty pattern", rule.id);
                 }
             }
         }
@@ -5500,14 +5010,20 @@ mod tests {
         let postgres = get_rule("postgres-uri").unwrap();
         let mysql = get_rule("mysql-uri").unwrap();
 
-        if let Detector::Prefix { prefix, charset, .. } = postgres.detector {
+        if let Detector::Prefix {
+            prefix, charset, ..
+        } = postgres.detector
+        {
             assert_eq!(prefix, "postgres://");
             assert!(matches!(charset, Charset::Url));
         } else {
             panic!("Expected Prefix detector for postgres");
         }
 
-        if let Detector::Prefix { prefix, charset, .. } = mysql.detector {
+        if let Detector::Prefix {
+            prefix, charset, ..
+        } = mysql.detector
+        {
             assert_eq!(prefix, "mysql://");
             assert!(matches!(charset, Charset::Url));
         } else {
@@ -5531,7 +5047,9 @@ mod tests {
         if let Detector::KeyValue { keys, .. } = rule.detector {
             // Should have both uppercase and lowercase variants
             let has_upper = keys.iter().any(|k| k.contains("ANTHROPIC"));
-            let has_lower = keys.iter().any(|k| k.contains("anthropic") || k.contains("claude"));
+            let has_lower = keys
+                .iter()
+                .any(|k| k.contains("anthropic") || k.contains("claude"));
             assert!(
                 has_upper && has_lower,
                 "Should have both case variants: {:?}",
@@ -5549,10 +5067,7 @@ mod tests {
     #[test]
     fn test_filter_rules_by_id() {
         let rules = builtin_rules();
-        let filtered: Vec<_> = rules
-            .iter()
-            .filter(|r| r.id == "github-pat")
-            .collect();
+        let filtered: Vec<_> = rules.iter().filter(|r| r.id == "github-pat").collect();
         assert_eq!(filtered.len(), 1);
         assert_eq!(filtered[0].id, "github-pat");
     }
@@ -5674,7 +5189,11 @@ mod tests {
                     assert!(*min_len > 0, "Rule {} has zero min_len", rule.id);
                 }
                 Detector::KeyValue { min_value_len, .. } => {
-                    assert!(*min_value_len > 0, "Rule {} has zero min_value_len", rule.id);
+                    assert!(
+                        *min_value_len > 0,
+                        "Rule {} has zero min_value_len",
+                        rule.id
+                    );
                 }
                 _ => {}
             }
@@ -5685,7 +5204,10 @@ mod tests {
     fn test_prefix_min_len_greater_than_prefix_len() {
         let rules = builtin_rules();
         for rule in &rules {
-            if let Detector::Prefix { prefix, min_len, .. } = &rule.detector {
+            if let Detector::Prefix {
+                prefix, min_len, ..
+            } = &rule.detector
+            {
                 assert!(
                     *min_len > prefix.len(),
                     "Rule {} min_len ({}) should be > prefix len ({})",

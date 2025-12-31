@@ -3088,10 +3088,7 @@ fn test_empty_file_handling() {
 
     let (output, exit_code) = run_scan(dir.path_str());
     // Should handle empty files gracefully
-    assert!(
-        exit_code == 0,
-        "Should handle empty files without error"
-    );
+    assert!(exit_code == 0, "Should handle empty files without error");
     assert!(
         count_findings(&output) == 0,
         "Empty file should have no findings"
@@ -3121,7 +3118,12 @@ fn test_secret_adjacent_to_special_chars() {
         r#"key1={}|key2={}
 array=[{},{}]
 obj={{"a":"{}","b":"{}"}}"#,
-        OPENAI_API_KEY, GITHUB_PAT, OPENAI_API_KEY, GITHUB_PAT, AWS_ACCESS_KEY_ID, ANTHROPIC_API_KEY
+        OPENAI_API_KEY,
+        GITHUB_PAT,
+        OPENAI_API_KEY,
+        GITHUB_PAT,
+        AWS_ACCESS_KEY_ID,
+        ANTHROPIC_API_KEY
     );
     dir.write_file("special.txt", &content);
 
@@ -3455,7 +3457,10 @@ fn test_performance_memory_large_files() {
         for i in 0..5000 {
             // Mix of regular lines and occasional secrets
             if i % 500 == 0 {
-                content.push_str(&format!("SECRET_{}_{} = '{}'\n", file_num, i, OPENAI_API_KEY));
+                content.push_str(&format!(
+                    "SECRET_{}_{} = '{}'\n",
+                    file_num, i, OPENAI_API_KEY
+                ));
             } else {
                 // Varied line content to prevent compression
                 content.push_str(&format!(
@@ -3497,10 +3502,7 @@ fn test_performance_mixed_file_types() {
     let dir = TestDir::new("perf-mixed-files");
 
     // Text file with secrets
-    dir.write_file(
-        "config.txt",
-        &format!("API_KEY={}\n", OPENAI_API_KEY),
-    );
+    dir.write_file("config.txt", &format!("API_KEY={}\n", OPENAI_API_KEY));
 
     // Binary-like content (should be skipped or handled gracefully)
     let mut binary_content = vec![0u8; 1000];
@@ -3508,16 +3510,11 @@ fn test_performance_mixed_file_types() {
         *byte = (i % 256) as u8;
     }
     // Write as bytes
-    std::fs::write(
-        dir.path().join("binary.dat"),
-        &binary_content,
-    ).expect("Failed to write binary file");
+    std::fs::write(dir.path().join("binary.dat"), &binary_content)
+        .expect("Failed to write binary file");
 
     // JSON with secrets
-    dir.write_file(
-        "config.json",
-        &format!(r#"{{"key": "{}"}}"#, GITHUB_PAT),
-    );
+    dir.write_file("config.json", &format!(r#"{{"key": "{}"}}"#, GITHUB_PAT));
 
     // Empty file
     dir.write_file("empty.txt", "");
@@ -3556,7 +3553,10 @@ fn test_performance_extreme_line_count() {
     let mut content = String::with_capacity(3_000_000);
     for i in 0..50_000 {
         if i % 5000 == 0 {
-            content.push_str(&format!("# Secret at line {}\nOPENAI_KEY={}\n", i, OPENAI_API_KEY));
+            content.push_str(&format!(
+                "# Secret at line {}\nOPENAI_KEY={}\n",
+                i, OPENAI_API_KEY
+            ));
         } else {
             content.push_str(&format!("line_{} = 'value_{}'\n", i, i));
         }

@@ -48,7 +48,9 @@ pub fn verify_secret(finding: &Finding) -> VerificationResult {
             "github-pat" | "github-oauth" | "github-app" | "github-refresh" => {
                 verify_github(&finding.secret_raw)
             }
-            "gitlab-pat" | "gitlab-pipeline" | "gitlab-runner" => verify_gitlab(&finding.secret_raw),
+            "gitlab-pat" | "gitlab-pipeline" | "gitlab-runner" => {
+                verify_gitlab(&finding.secret_raw)
+            }
 
             // AI Services (High Priority - Bug Bounty)
             "openai-api-key" | "openai-project-key" => verify_openai(&finding.secret_raw),
@@ -896,11 +898,7 @@ mod tests {
 
         let result = verify_secret(&finding);
         assert_eq!(result.status, VerificationStatus::NotSupported);
-        assert!(result
-            .message
-            .as_ref()
-            .unwrap()
-            .contains("token parsing"));
+        assert!(result.message.as_ref().unwrap().contains("token parsing"));
     }
 
     #[test]

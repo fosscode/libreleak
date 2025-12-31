@@ -379,19 +379,25 @@ mod tests {
     #[test]
     fn test_target_https_git_url() {
         let args = parse(&["https://github.com/user/repo"]).unwrap();
-        assert!(matches!(args.target, Target::GitRepo(ref u) if u == "https://github.com/user/repo"));
+        assert!(
+            matches!(args.target, Target::GitRepo(ref u) if u == "https://github.com/user/repo")
+        );
     }
 
     #[test]
     fn test_target_http_git_url() {
         let args = parse(&["http://github.com/user/repo"]).unwrap();
-        assert!(matches!(args.target, Target::GitRepo(ref u) if u == "http://github.com/user/repo"));
+        assert!(
+            matches!(args.target, Target::GitRepo(ref u) if u == "http://github.com/user/repo")
+        );
     }
 
     #[test]
     fn test_target_ssh_git_url() {
         let args = parse(&["git@github.com:user/repo.git"]).unwrap();
-        assert!(matches!(args.target, Target::GitRepo(ref u) if u == "git@github.com:user/repo.git"));
+        assert!(
+            matches!(args.target, Target::GitRepo(ref u) if u == "git@github.com:user/repo.git")
+        );
     }
 
     #[test]
@@ -636,7 +642,9 @@ mod tests {
     fn test_unknown_option_long() {
         let result = parse(&["--unknown-flag"]);
         assert!(result.is_err());
-        assert!(result.unwrap_err().contains("unknown option '--unknown-flag'"));
+        assert!(result
+            .unwrap_err()
+            .contains("unknown option '--unknown-flag'"));
     }
 
     // =========================================
@@ -690,7 +698,9 @@ mod tests {
     fn test_format_before_target() {
         let args = parse(&["-f", "json", "https://github.com/user/repo"]).unwrap();
         assert!(matches!(args.format, OutputFormat::Json));
-        assert!(matches!(args.target, Target::GitRepo(ref u) if u == "https://github.com/user/repo"));
+        assert!(
+            matches!(args.target, Target::GitRepo(ref u) if u == "https://github.com/user/repo")
+        );
     }
 
     #[test]

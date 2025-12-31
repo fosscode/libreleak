@@ -1900,8 +1900,12 @@ mod tests {
     #[test]
     fn test_is_not_placeholder_real_database_uri() {
         // Real-looking credentials should NOT be placeholders
-        assert!(!is_placeholder("postgres://myuser:XkJ9#mP2@db.server.com/production"));
-        assert!(!is_placeholder("mongodb://app:S3cr3tP@ssw0rd@cluster.mongodb.net/mydb"));
+        assert!(!is_placeholder(
+            "postgres://myuser:XkJ9#mP2@db.server.com/production"
+        ));
+        assert!(!is_placeholder(
+            "mongodb://app:S3cr3tP@ssw0rd@cluster.mongodb.net/mydb"
+        ));
     }
 
     // ========================================================================
@@ -1915,7 +1919,10 @@ mod tests {
         // The r before SK makes it not a word boundary
         let line = "randomrSK1234567890abcdefghij";
         let result = scanner.detect_prefix(line, "SK", 20, Charset::AlphaNum);
-        assert!(result.is_none(), "Should not match SK when preceded by alphanumeric");
+        assert!(
+            result.is_none(),
+            "Should not match SK when preceded by alphanumeric"
+        );
     }
 
     #[test]
@@ -2007,7 +2014,11 @@ mod tests {
     #[test]
     fn test_build_context_redacts_secret() {
         let scanner = Scanner::new(vec![]).with_context(1);
-        let lines = vec!["before secret here", "match secret line", "after secret here"];
+        let lines = vec![
+            "before secret here",
+            "match secret line",
+            "after secret here",
+        ];
         let context = scanner.build_context(&lines, 1, "secret", "[REDACTED]");
 
         // All lines should have secret replaced

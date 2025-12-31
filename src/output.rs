@@ -221,7 +221,10 @@ fn truncate_chars(s: &str, max_chars: usize) -> String {
     let tail_len = max_chars.saturating_sub(1) - head_len;
 
     let head: String = s.chars().take(head_len).collect();
-    let tail: String = s.chars().skip(char_count.saturating_sub(tail_len)).collect();
+    let tail: String = s
+        .chars()
+        .skip(char_count.saturating_sub(tail_len))
+        .collect();
     format!("{head}…{tail}")
 }
 
@@ -775,12 +778,11 @@ mod tests {
 
     #[test]
     fn test_scan_metadata_with_git_info() {
-        let meta = ScanMetadata::new("/path")
-            .with_git_info(
-                Some("main".to_string()),
-                Some("abc123".to_string()),
-                Some("origin".to_string()),
-            );
+        let meta = ScanMetadata::new("/path").with_git_info(
+            Some("main".to_string()),
+            Some("abc123".to_string()),
+            Some("origin".to_string()),
+        );
         assert_eq!(meta.git_branch, Some("main".to_string()));
         assert_eq!(meta.git_commit, Some("abc123".to_string()));
         assert_eq!(meta.git_remote, Some("origin".to_string()));
@@ -788,8 +790,7 @@ mod tests {
 
     #[test]
     fn test_scan_metadata_with_duration() {
-        let meta = ScanMetadata::new("/path")
-            .with_duration(1234);
+        let meta = ScanMetadata::new("/path").with_duration(1234);
         assert_eq!(meta.scan_duration_ms, 1234);
     }
 
@@ -895,7 +896,7 @@ mod tests {
         let finding = create_test_finding(
             "test-rule",
             "Test Rule",
-            r"src\path\to\file.rs",  // Windows-style path
+            r"src\path\to\file.rs", // Windows-style path
             1,
             1,
             "secret",
@@ -969,9 +970,14 @@ mod tests {
 
     #[test]
     fn test_report_severity_high_private_key() {
-        let findings = vec![
-            create_test_finding("rsa-private-key", "RSA Private Key", "file.pem", 1, 1, "***"),
-        ];
+        let findings = vec![create_test_finding(
+            "rsa-private-key",
+            "RSA Private Key",
+            "file.pem",
+            1,
+            1,
+            "***",
+        )];
         // High severity should be counted for private-key rule
         let high_count = findings
             .iter()
@@ -987,9 +993,14 @@ mod tests {
 
     #[test]
     fn test_report_severity_high_aws() {
-        let findings = vec![
-            create_test_finding("aws-access-key-id", "AWS Access Key", "config.yml", 1, 1, "AKIA***"),
-        ];
+        let findings = vec![create_test_finding(
+            "aws-access-key-id",
+            "AWS Access Key",
+            "config.yml",
+            1,
+            1,
+            "AKIA***",
+        )];
         let high_count = findings
             .iter()
             .filter(|f| f.rule_id.contains("aws"))
@@ -999,9 +1010,14 @@ mod tests {
 
     #[test]
     fn test_report_severity_medium_api_key() {
-        let findings = vec![
-            create_test_finding("generic-api-key", "Generic API Key", "file.env", 1, 1, "key***"),
-        ];
+        let findings = vec![create_test_finding(
+            "generic-api-key",
+            "Generic API Key",
+            "file.env",
+            1,
+            1,
+            "key***",
+        )];
         let medium_count = findings
             .iter()
             .filter(|f| {
@@ -1017,7 +1033,14 @@ mod tests {
     fn test_report_category_extraction() {
         let findings = vec![
             create_test_finding("github-pat", "GitHub PAT", "file.rs", 1, 1, "ghp_***"),
-            create_test_finding("github-fine-grained-pat", "GitHub Fine Grained", "file2.rs", 1, 1, "github_pat_***"),
+            create_test_finding(
+                "github-fine-grained-pat",
+                "GitHub Fine Grained",
+                "file2.rs",
+                1,
+                1,
+                "github_pat_***",
+            ),
             create_test_finding("aws-access-key-id", "AWS Key", "file3.rs", 1, 1, "AKIA***"),
         ];
 
@@ -1066,14 +1089,7 @@ mod tests {
 
     #[test]
     fn test_finding_with_empty_context() {
-        let finding = create_test_finding(
-            "test-rule",
-            "Test",
-            "file.rs",
-            1,
-            1,
-            "secret",
-        );
+        let finding = create_test_finding("test-rule", "Test", "file.rs", 1, 1, "secret");
         assert!(finding.context.is_empty());
     }
 
@@ -1094,41 +1110,20 @@ mod tests {
     #[test]
     fn test_finding_with_long_file_path() {
         let long_path = "a/".repeat(100) + "file.rs";
-        let finding = create_test_finding(
-            "test-rule",
-            "Test",
-            &long_path,
-            1,
-            1,
-            "secret",
-        );
+        let finding = create_test_finding("test-rule", "Test", &long_path, 1, 1, "secret");
         assert!(finding.file.len() > 200);
     }
 
     #[test]
     fn test_finding_at_line_zero() {
         // Edge case: line 0 (unusual but possible)
-        let finding = create_test_finding(
-            "test-rule",
-            "Test",
-            "file.rs",
-            0,
-            1,
-            "secret",
-        );
+        let finding = create_test_finding("test-rule", "Test", "file.rs", 0, 1, "secret");
         assert_eq!(finding.line, 0);
     }
 
     #[test]
     fn test_finding_at_column_zero() {
-        let finding = create_test_finding(
-            "test-rule",
-            "Test",
-            "file.rs",
-            1,
-            0,
-            "secret",
-        );
+        let finding = create_test_finding("test-rule", "Test", "file.rs", 1, 0, "secret");
         assert_eq!(finding.column, 0);
     }
 
@@ -1178,20 +1173,18 @@ mod tests {
             "file.rs",
             1,
             1,
-            "ghp_...xxxx",  // Typical redacted format
+            "ghp_...xxxx", // Typical redacted format
         );
         assert!(finding.secret.contains("..."));
     }
 
     #[test]
     fn test_context_with_redacted_content() {
-        let context = vec![
-            ContextLine {
-                line_num: 1,
-                content: "TOKEN=ghp_...xxxx".to_string(),
-                is_match: true,
-            },
-        ];
+        let context = vec![ContextLine {
+            line_num: 1,
+            content: "TOKEN=ghp_...xxxx".to_string(),
+            is_match: true,
+        }];
         let finding = create_test_finding_with_context(
             "github-pat",
             "GitHub PAT",

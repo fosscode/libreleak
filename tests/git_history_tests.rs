@@ -716,7 +716,12 @@ fn test_secret_in_submodule() {
     // Add as submodule (using file:// protocol for local path)
     let submodule_path = submodule_repo.path().display().to_string();
     let add_result = std::process::Command::new("git")
-        .args(["submodule", "add", &format!("file://{}", submodule_path), "vendor/lib"])
+        .args([
+            "submodule",
+            "add",
+            &format!("file://{}", submodule_path),
+            "vendor/lib",
+        ])
         .current_dir(repo.path())
         .output();
 
@@ -903,7 +908,10 @@ fn test_secret_in_renamed_file_with_modifications() {
     let repo = TestGitRepo::new("renamed-modified");
 
     // Create file with secret
-    repo.write_file("config.py", &format!("# Config\nAPI_KEY = '{}'", OPENAI_API_KEY));
+    repo.write_file(
+        "config.py",
+        &format!("# Config\nAPI_KEY = '{}'", OPENAI_API_KEY),
+    );
     repo.commit("Add config");
 
     // Rename and add content
@@ -914,7 +922,10 @@ fn test_secret_in_renamed_file_with_modifications() {
         .unwrap();
     repo.write_file(
         "settings.py",
-        &format!("# Settings\n# Updated config\nAPI_KEY = '{}'\nDEBUG = True", OPENAI_API_KEY),
+        &format!(
+            "# Settings\n# Updated config\nAPI_KEY = '{}'\nDEBUG = True",
+            OPENAI_API_KEY
+        ),
     );
     repo.commit("Rename and update config");
 
@@ -931,7 +942,10 @@ fn test_secret_removed_during_rename() {
     let repo = TestGitRepo::new("renamed-secret-removed");
 
     // Create file with secret
-    repo.write_file("config.env", &format!("API_KEY={}\nDEBUG=true", OPENAI_API_KEY));
+    repo.write_file(
+        "config.env",
+        &format!("API_KEY={}\nDEBUG=true", OPENAI_API_KEY),
+    );
     repo.commit("Add config with secret");
 
     // Rename and remove secret
@@ -940,7 +954,10 @@ fn test_secret_removed_during_rename() {
         .current_dir(repo.path())
         .output()
         .unwrap();
-    repo.write_file("config.production.env", "DEBUG=false\n# API key moved to vault");
+    repo.write_file(
+        "config.production.env",
+        "DEBUG=false\n# API key moved to vault",
+    );
     repo.commit("Rename and remove secret");
 
     // Current scan should not find secret
@@ -1026,7 +1043,10 @@ fn test_secret_in_file_moved_from_subdirectory() {
     let repo = TestGitRepo::new("moved-from-subdir");
 
     // Create file with secret in subdirectory
-    repo.write_file("deep/nested/path/secret.env", &format!("TOKEN={}", GITHUB_PAT));
+    repo.write_file(
+        "deep/nested/path/secret.env",
+        &format!("TOKEN={}", GITHUB_PAT),
+    );
     repo.commit("Add secret in nested directory");
 
     // Move to root
@@ -1050,7 +1070,10 @@ fn test_secret_moved_between_nested_directories() {
     let repo = TestGitRepo::new("moved-between-dirs");
 
     // Create file with secret
-    repo.write_file("src/config/api.env", &format!("ANTHROPIC_KEY={}", ANTHROPIC_API_KEY));
+    repo.write_file(
+        "src/config/api.env",
+        &format!("ANTHROPIC_KEY={}", ANTHROPIC_API_KEY),
+    );
     repo.commit("Add API config");
 
     // Move to different nested location
@@ -1085,7 +1108,10 @@ fn test_secret_removed_after_directory_move() {
         .current_dir(repo.path())
         .output()
         .unwrap();
-    repo.write_file("prod/config.env", "# Production config\n# Secrets managed by vault");
+    repo.write_file(
+        "prod/config.env",
+        "# Production config\n# Secrets managed by vault",
+    );
     repo.commit("Move to prod and remove hardcoded secret");
 
     // Should not detect secret
@@ -1111,7 +1137,10 @@ fn test_large_repo_many_branches_secret_on_one() {
     for i in 0..10 {
         repo.checkout("main");
         repo.create_branch(&format!("feature/clean-{}", i));
-        repo.write_file(&format!("feature{}.txt", i), &format!("Feature {} content", i));
+        repo.write_file(
+            &format!("feature{}.txt", i),
+            &format!("Feature {} content", i),
+        );
         repo.commit(&format!("Add feature {}", i));
     }
 
@@ -1125,7 +1154,10 @@ fn test_large_repo_many_branches_secret_on_one() {
     for i in 10..20 {
         repo.checkout("main");
         repo.create_branch(&format!("feature/clean-{}", i));
-        repo.write_file(&format!("feature{}.txt", i), &format!("Feature {} content", i));
+        repo.write_file(
+            &format!("feature{}.txt", i),
+            &format!("Feature {} content", i),
+        );
         repo.commit(&format!("Add feature {}", i));
     }
 
@@ -1226,13 +1258,19 @@ fn test_secret_in_merge_conflict_markers() {
 
     // Create branch with one secret
     repo.create_branch("feature/api-a");
-    repo.write_file("config.env", &format!("DEBUG=false\nAPI_KEY={}", OPENAI_API_KEY));
+    repo.write_file(
+        "config.env",
+        &format!("DEBUG=false\nAPI_KEY={}", OPENAI_API_KEY),
+    );
     repo.commit("Add API key A");
 
     // Go back and create conflicting change
     repo.checkout("main");
     repo.create_branch("feature/api-b");
-    repo.write_file("config.env", &format!("DEBUG=true\nAPI_KEY={}", ANTHROPIC_API_KEY));
+    repo.write_file(
+        "config.env",
+        &format!("DEBUG=true\nAPI_KEY={}", ANTHROPIC_API_KEY),
+    );
     repo.commit("Add API key B");
 
     // Manually create a file with conflict markers (simulating unresolved merge)
@@ -1435,19 +1473,31 @@ fn test_concurrent_modifications_same_file_different_secrets() {
 
     // Branch A adds OpenAI key
     repo.create_branch("feature/openai");
-    repo.write_file("config.env", &format!("# Configuration\nDEBUG=true\nOPENAI_KEY={}", OPENAI_API_KEY));
+    repo.write_file(
+        "config.env",
+        &format!("# Configuration\nDEBUG=true\nOPENAI_KEY={}", OPENAI_API_KEY),
+    );
     repo.commit("Add OpenAI key");
 
     // Branch B (from main) adds Anthropic key
     repo.checkout("main");
     repo.create_branch("feature/anthropic");
-    repo.write_file("config.env", &format!("# Configuration\nDEBUG=true\nANTHROPIC_KEY={}", ANTHROPIC_API_KEY));
+    repo.write_file(
+        "config.env",
+        &format!(
+            "# Configuration\nDEBUG=true\nANTHROPIC_KEY={}",
+            ANTHROPIC_API_KEY
+        ),
+    );
     repo.commit("Add Anthropic key");
 
     // Branch C (from main) adds GitHub token
     repo.checkout("main");
     repo.create_branch("feature/github");
-    repo.write_file("config.env", &format!("# Configuration\nDEBUG=true\nGITHUB_TOKEN={}", GITHUB_PAT));
+    repo.write_file(
+        "config.env",
+        &format!("# Configuration\nDEBUG=true\nGITHUB_TOKEN={}", GITHUB_PAT),
+    );
     repo.commit("Add GitHub token");
 
     // Main still has no secrets
@@ -1479,7 +1529,13 @@ fn test_concurrent_modifications_merged_sequentially() {
 
     // Create second branch from updated main
     repo.create_branch("feature/second");
-    repo.write_file("app.py", &format!("# App\nKEY1 = '{}'\nKEY2 = '{}'", OPENAI_API_KEY, ANTHROPIC_API_KEY));
+    repo.write_file(
+        "app.py",
+        &format!(
+            "# App\nKEY1 = '{}'\nKEY2 = '{}'",
+            OPENAI_API_KEY, ANTHROPIC_API_KEY
+        ),
+    );
     repo.commit("Add second key");
     repo.checkout("main");
     std::process::Command::new("git")
@@ -1506,13 +1562,19 @@ fn test_concurrent_modifications_one_branch_removes_secret() {
 
     // Branch A keeps and modifies around secret
     repo.create_branch("feature/keep");
-    repo.write_file("config.py", &format!("# Updated\nKEY = '{}'\nDEBUG = True", OPENAI_API_KEY));
+    repo.write_file(
+        "config.py",
+        &format!("# Updated\nKEY = '{}'\nDEBUG = True", OPENAI_API_KEY),
+    );
     repo.commit("Update with secret");
 
     // Branch B removes secret
     repo.checkout("main");
     repo.create_branch("feature/remove");
-    repo.write_file("config.py", "# Cleaned\nimport os\nKEY = os.environ.get('KEY')");
+    repo.write_file(
+        "config.py",
+        "# Cleaned\nimport os\nKEY = os.environ.get('KEY')",
+    );
     repo.commit("Remove hardcoded secret");
 
     // Main still has original secret
@@ -1542,13 +1604,19 @@ fn test_concurrent_modifications_race_condition_scenario() {
     // Simulate race: both developers add secrets to same file
     // Developer A
     repo.create_branch("dev-a/add-aws");
-    repo.write_file("settings.yaml", &format!("app:\n  name: test\naws:\n  key: {}", AWS_ACCESS_KEY_ID));
+    repo.write_file(
+        "settings.yaml",
+        &format!("app:\n  name: test\naws:\n  key: {}", AWS_ACCESS_KEY_ID),
+    );
     repo.commit("Dev A adds AWS key");
 
     // Developer B (from same main commit)
     repo.checkout("main");
     repo.create_branch("dev-b/add-stripe");
-    repo.write_file("settings.yaml", &format!("app:\n  name: test\nstripe:\n  key: {}", STRIPE_SECRET_KEY));
+    repo.write_file(
+        "settings.yaml",
+        &format!("app:\n  name: test\nstripe:\n  key: {}", STRIPE_SECRET_KEY),
+    );
     repo.commit("Dev B adds Stripe key");
 
     // Both branches have different secrets
@@ -1586,7 +1654,10 @@ fn test_same_file_modified_in_many_branches() {
     for (branch, key_name, secret) in secrets.iter() {
         repo.checkout("main");
         repo.create_branch(branch);
-        repo.write_file("shared.env", &format!("# Shared config\n{}={}", key_name, secret));
+        repo.write_file(
+            "shared.env",
+            &format!("# Shared config\n{}={}", key_name, secret),
+        );
         repo.commit(&format!("Add {} to shared config", key_name));
     }
 

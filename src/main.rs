@@ -34,9 +34,11 @@ fn run(args: cli::Args) -> Result<(), Box<dyn std::error::Error>> {
         return Err("No rules selected - check your --only/--exclude filters".into());
     }
 
-    let scanner = scanner::Scanner::new(rules).with_context(args.context_lines);
+    let scanner = scanner::Scanner::new(rules)
+        .with_context(args.context_lines)
+        .with_redaction(!args.no_redact);
 
-    let findings = match &args.target {
+    let mut findings = match &args.target {
         cli::Target::Path(path) => scanner.scan_path(path)?,
         cli::Target::GitRepo(url) => scanner.scan_git_repo(url)?,
     };

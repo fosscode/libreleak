@@ -213,7 +213,9 @@ mod tests {
     #[test]
     fn test_is_git_url_with_auth() {
         assert!(is_git_url("https://user:token@github.com/owner/repo"));
-        assert!(is_git_url("https://oauth2:ghp_token@github.com/owner/repo.git"));
+        assert!(is_git_url(
+            "https://oauth2:ghp_token@github.com/owner/repo.git"
+        ));
     }
 
     // ========================================================================
@@ -382,7 +384,8 @@ mod tests {
     #[test]
     fn test_clone_repo_nonexistent_repo() {
         // Test with a URL that looks valid but repo doesn't exist
-        let result = clone_repo("https://github.com/nonexistent-owner-12345/nonexistent-repo-67890");
+        let result =
+            clone_repo("https://github.com/nonexistent-owner-12345/nonexistent-repo-67890");
         assert!(result.is_err(), "Nonexistent repo should fail to clone");
     }
 
@@ -407,7 +410,10 @@ mod tests {
         cleanup(temp_dir.to_str().unwrap());
 
         // Verify it's gone
-        assert!(!temp_dir.exists(), "Directory should be removed after cleanup");
+        assert!(
+            !temp_dir.exists(),
+            "Directory should be removed after cleanup"
+        );
     }
 
     #[test]
@@ -431,7 +437,10 @@ mod tests {
         // Cleanup should remove everything
         cleanup(temp_dir.to_str().unwrap());
 
-        assert!(!temp_dir.exists(), "Nested directory should be fully removed");
+        assert!(
+            !temp_dir.exists(),
+            "Nested directory should be fully removed"
+        );
     }
 
     // ========================================================================
@@ -451,7 +460,9 @@ mod tests {
         if !files.is_empty() {
             // Verify common project files are tracked
             let has_cargo_toml = files.iter().any(|f| f == "Cargo.toml");
-            let has_src_main = files.iter().any(|f| f == "src/main.rs" || f.ends_with("main.rs"));
+            let has_src_main = files
+                .iter()
+                .any(|f| f == "src/main.rs" || f.ends_with("main.rs"));
 
             // At least one of these should exist in a Rust project
             assert!(
