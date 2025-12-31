@@ -38,6 +38,7 @@ fn run(args: cli::Args) -> Result<(), Box<dyn std::error::Error>> {
         .with_context(args.context_lines)
         .with_redaction(!args.no_redact);
 
+    #[allow(unused_mut)]
     let mut findings = match &args.target {
         cli::Target::Path(path) => scanner.scan_path(path)?,
         cli::Target::GitRepo(url) => scanner.scan_git_repo(url)?,
